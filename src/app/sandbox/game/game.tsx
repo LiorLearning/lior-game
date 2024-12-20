@@ -4,7 +4,7 @@ import React, { createContext, useContext, ReactNode, useEffect, useState } from
 import { Card } from "@/components/custom_ui/card";
 import { Button } from '@/components/custom_ui/button';
 import './chocolate.css';
-import SuccessAnimation from '@/components/artifacts/utils/success-animate';
+import SuccessAnimation from '@/components/utils/success-animate';
 import useSound from 'use-sound';
 import { useSearchParams } from 'next/navigation';
 

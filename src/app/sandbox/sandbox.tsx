@@ -4,7 +4,7 @@ import React, { useRef, useEffect } from 'react';
 import FractionsGame, { desc, useGameState } from './game/game';
 import Chat from "@/components/Chat";
 import { useWebSocketLogger } from '@/components/websocket';
-import { handleScreenshot } from '@/components/artifacts/utils/utils';
+import { handleScreenshot } from '@/components/utils/screenshot';
 import { AdminRequestMessage, AssistanceResponseMessage } from '@/components/MessageContext';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw } from 'lucide-react';
