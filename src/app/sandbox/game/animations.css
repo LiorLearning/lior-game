@@ -1,0 +1,83 @@
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(147, 51, 234, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(147, 51, 234, 0);
+  }
+}
+
+@keyframes highlight {
+  0% {
+    box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(167, 139, 250, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(167, 139, 250, 0);
+  }
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
+}
+
+.animate-highlight {
+  animation: highlight 2s infinite;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s infinite;
+}
+
+/* Add transitions for all interactive elements */
+button {
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+/* Hover effects for interactive elements */
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Bar animations */
+.bar-section {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bar-piece {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bar-piece:hover {
+  transform: scale(1.02);
+}
+
+.bar-piece.selected {
+  animation: highlight 2s infinite;
+}
