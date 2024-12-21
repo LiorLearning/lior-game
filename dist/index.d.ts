@@ -351,6 +351,8 @@ declare namespace CustomUI {
 
 declare const SandboxProvider: React__default.FC<{
     children: ReactNode;
+    gameState: any;
+    desc: string;
 }>;
 declare const useSandboxContext: () => {
     componentRef: React__default.RefObject<HTMLDivElement> | null;
@@ -359,6 +361,8 @@ declare const useSandboxContext: () => {
 declare const LiorGameProvider: React__default.FC<{
     children: ReactNode;
     wsUrl?: string;
+    gameState: any;
+    desc: string;
 }>;
 declare const useLiorGame: () => any;
 declare const Button: React__default.FC<ButtonProps & React__default.RefAttributes<HTMLButtonElement>>;

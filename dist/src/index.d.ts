@@ -2,6 +2,8 @@ import React, { ReactNode } from 'react';
 import * as CustomUI from './components/custom_ui/index';
 export declare const SandboxProvider: React.FC<{
     children: ReactNode;
+    gameState: any;
+    desc: string;
 }>;
 export declare const useSandboxContext: () => {
     componentRef: React.RefObject<HTMLDivElement> | null;
@@ -10,6 +12,8 @@ export declare const useSandboxContext: () => {
 export declare const LiorGameProvider: React.FC<{
     children: ReactNode;
     wsUrl?: string;
+    gameState: any;
+    desc: string;
 }>;
 export declare const useLiorGame: () => any;
 export declare const Button: React.FC<import("./components/custom_ui/button").ButtonProps & React.RefAttributes<HTMLButtonElement>>, Card: React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLDivElement> & React.RefAttributes<HTMLDivElement>>, Slider: React.FC<Omit<import("@radix-ui/react-slider").SliderProps & React.RefAttributes<HTMLSpanElement>, "ref"> & React.RefAttributes<HTMLSpanElement>>, Switch: React.FC<Omit<import("@radix-ui/react-switch").SwitchProps & React.RefAttributes<HTMLButtonElement>, "ref"> & React.RefAttributes<HTMLButtonElement>>, Select: React.FC<import("@radix-ui/react-select").SelectProps>, Accordion: React.ForwardRefExoticComponent<(import("@radix-ui/react-accordion").AccordionSingleProps | import("@radix-ui/react-accordion").AccordionMultipleProps) & React.RefAttributes<HTMLDivElement>>, DropdownMenu: React.FC<import("@radix-ui/react-dropdown-menu").DropdownMenuProps>, ScrollArea: React.ForwardRefExoticComponent<Omit<import("@radix-ui/react-scroll-area").ScrollAreaProps & React.RefAttributes<HTMLDivElement>, "ref"> & React.RefAttributes<HTMLDivElement>>, Toggle: React.FC<Omit<import("@radix-ui/react-toggle").ToggleProps & React.RefAttributes<HTMLButtonElement>, "ref"> & import("class-variance-authority").VariantProps<(props?: ({

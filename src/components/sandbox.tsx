@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useRef, useEffect, ReactNode } from 'react';
-import { desc, useGameState } from '../app/sandbox/game/game';
 import Chat from "@/components/Chat";
 import { useWebSocketLogger } from '@/components/websocket';
 import { handleScreenshot } from '@/components/utils/screenshot';
@@ -18,14 +17,15 @@ const SandboxContext = createContext<{
 
 // Create a provider component for the Sandbox
 export const SandboxProvider: React.FC<{ 
-  children: ReactNode 
-}> = ({ children }) => {
+  children: ReactNode,
+  gameState: any,
+  desc: string
+}> = ({ children, gameState, desc }) => {
     const componentRef = useRef<HTMLDivElement | null>(null);
     const setComponentRef = (ref: React.RefObject<HTMLDivElement>) => {
       componentRef.current = ref.current;
     };
     const { sendLog, addToChat, isConnected } = useWebSocketLogger()
-    const { gameState } = useGameState();
 
     const getBackgroundImage = () => {
       return 'https://mathtutor-images.s3.us-east-1.amazonaws.com/generated-images/generated_image_20241203_010231.png';

@@ -1,8 +1,8 @@
 import * as React from 'react';
-import React__default, { createContext, useState, useRef, useEffect, forwardRef, createElement, useContext, useCallback, useMemo, useId as useId$1, Component, useLayoutEffect, useInsertionEffect, Fragment as Fragment$1, Children, isValidElement } from 'react';
-import { jsx, Fragment, jsxs } from 'react/jsx-runtime';
+import React__default, { createContext, useState, useRef, useEffect, forwardRef, createElement, useContext, useCallback, useId as useId$1, Component, useLayoutEffect, useInsertionEffect, useMemo, Fragment as Fragment$1, Children, isValidElement } from 'react';
 import * as ReactDOM from 'react-dom';
 import ReactDOM__default from 'react-dom';
+import { jsx, Fragment, jsxs } from 'react/jsx-runtime';
 
 function _extends() {
   return _extends = Object.assign ? Object.assign.bind() : function (n) {
@@ -61,6 +61,1077 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
   var e = new Error(message);
   return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
 };
+
+// packages/react/compose-refs/src/composeRefs.tsx
+function setRef(ref, value) {
+  if (typeof ref === "function") {
+    return ref(value);
+  } else if (ref !== null && ref !== void 0) {
+    ref.current = value;
+  }
+}
+function composeRefs(...refs) {
+  return (node) => {
+    let hasCleanup = false;
+    const cleanups = refs.map((ref) => {
+      const cleanup = setRef(ref, node);
+      if (!hasCleanup && typeof cleanup == "function") {
+        hasCleanup = true;
+      }
+      return cleanup;
+    });
+    if (hasCleanup) {
+      return () => {
+        for (let i = 0; i < cleanups.length; i++) {
+          const cleanup = cleanups[i];
+          if (typeof cleanup == "function") {
+            cleanup();
+          } else {
+            setRef(refs[i], null);
+          }
+        }
+      };
+    }
+  };
+}
+function useComposedRefs(...refs) {
+  return React.useCallback(composeRefs(...refs), refs);
+}
+
+// packages/react/slot/src/Slot.tsx
+var Slot = React.forwardRef((props, forwardedRef) => {
+  const { children, ...slotProps } = props;
+  const childrenArray = React.Children.toArray(children);
+  const slottable = childrenArray.find(isSlottable);
+  if (slottable) {
+    const newElement = slottable.props.children;
+    const newChildren = childrenArray.map((child) => {
+      if (child === slottable) {
+        if (React.Children.count(newElement) > 1) return React.Children.only(null);
+        return React.isValidElement(newElement) ? newElement.props.children : null;
+      } else {
+        return child;
+      }
+    });
+    return /* @__PURE__ */ jsx(SlotClone, { ...slotProps, ref: forwardedRef, children: React.isValidElement(newElement) ? React.cloneElement(newElement, void 0, newChildren) : null });
+  }
+  return /* @__PURE__ */ jsx(SlotClone, { ...slotProps, ref: forwardedRef, children });
+});
+Slot.displayName = "Slot";
+var SlotClone = React.forwardRef((props, forwardedRef) => {
+  const { children, ...slotProps } = props;
+  if (React.isValidElement(children)) {
+    const childrenRef = getElementRef$1(children);
+    return React.cloneElement(children, {
+      ...mergeProps(slotProps, children.props),
+      // @ts-ignore
+      ref: forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef
+    });
+  }
+  return React.Children.count(children) > 1 ? React.Children.only(null) : null;
+});
+SlotClone.displayName = "SlotClone";
+var Slottable = ({ children }) => {
+  return /* @__PURE__ */ jsx(Fragment, { children });
+};
+function isSlottable(child) {
+  return React.isValidElement(child) && child.type === Slottable;
+}
+function mergeProps(slotProps, childProps) {
+  const overrideProps = { ...childProps };
+  for (const propName in childProps) {
+    const slotPropValue = slotProps[propName];
+    const childPropValue = childProps[propName];
+    const isHandler = /^on[A-Z]/.test(propName);
+    if (isHandler) {
+      if (slotPropValue && childPropValue) {
+        overrideProps[propName] = (...args) => {
+          childPropValue(...args);
+          slotPropValue(...args);
+        };
+      } else if (slotPropValue) {
+        overrideProps[propName] = slotPropValue;
+      }
+    } else if (propName === "style") {
+      overrideProps[propName] = { ...slotPropValue, ...childPropValue };
+    } else if (propName === "className") {
+      overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
+    }
+  }
+  return { ...slotProps, ...overrideProps };
+}
+function getElementRef$1(element) {
+  let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
+  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.ref;
+  }
+  getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
+  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.props.ref;
+  }
+  return element.props.ref || element.ref;
+}
+
+// packages/react/primitive/src/Primitive.tsx
+var NODES = [
+  "a",
+  "button",
+  "div",
+  "form",
+  "h2",
+  "h3",
+  "img",
+  "input",
+  "label",
+  "li",
+  "nav",
+  "ol",
+  "p",
+  "span",
+  "svg",
+  "ul"
+];
+var Primitive = NODES.reduce((primitive, node) => {
+  const Node = React.forwardRef((props, forwardedRef) => {
+    const { asChild, ...primitiveProps } = props;
+    const Comp = asChild ? Slot : node;
+    if (typeof window !== "undefined") {
+      window[Symbol.for("radix-ui")] = true;
+    }
+    return /* @__PURE__ */ jsx(Comp, { ...primitiveProps, ref: forwardedRef });
+  });
+  Node.displayName = `Primitive.${node}`;
+  return { ...primitive, [node]: Node };
+}, {});
+function dispatchDiscreteCustomEvent(target, event) {
+  if (target) ReactDOM.flushSync(() => target.dispatchEvent(event));
+}
+
+// packages/react/use-layout-effect/src/useLayoutEffect.tsx
+var useLayoutEffect2 = Boolean(globalThis?.document) ? React.useLayoutEffect : () => {
+};
+
+function useStateMachine$1(initialState, machine) {
+  return React.useReducer((state, event) => {
+    const nextState = machine[state][event];
+    return nextState ?? state;
+  }, initialState);
+}
+
+// packages/react/presence/src/Presence.tsx
+var Presence = (props) => {
+  const { present, children } = props;
+  const presence = usePresence$1(present);
+  const child = typeof children === "function" ? children({ present: presence.isPresent }) : React.Children.only(children);
+  const ref = useComposedRefs(presence.ref, getElementRef(child));
+  const forceMount = typeof children === "function";
+  return forceMount || presence.isPresent ? React.cloneElement(child, { ref }) : null;
+};
+Presence.displayName = "Presence";
+function usePresence$1(present) {
+  const [node, setNode] = React.useState();
+  const stylesRef = React.useRef({});
+  const prevPresentRef = React.useRef(present);
+  const prevAnimationNameRef = React.useRef("none");
+  const initialState = present ? "mounted" : "unmounted";
+  const [state, send] = useStateMachine$1(initialState, {
+    mounted: {
+      UNMOUNT: "unmounted",
+      ANIMATION_OUT: "unmountSuspended"
+    },
+    unmountSuspended: {
+      MOUNT: "mounted",
+      ANIMATION_END: "unmounted"
+    },
+    unmounted: {
+      MOUNT: "mounted"
+    }
+  });
+  React.useEffect(() => {
+    const currentAnimationName = getAnimationName(stylesRef.current);
+    prevAnimationNameRef.current = state === "mounted" ? currentAnimationName : "none";
+  }, [state]);
+  useLayoutEffect2(() => {
+    const styles = stylesRef.current;
+    const wasPresent = prevPresentRef.current;
+    const hasPresentChanged = wasPresent !== present;
+    if (hasPresentChanged) {
+      const prevAnimationName = prevAnimationNameRef.current;
+      const currentAnimationName = getAnimationName(styles);
+      if (present) {
+        send("MOUNT");
+      } else if (currentAnimationName === "none" || styles?.display === "none") {
+        send("UNMOUNT");
+      } else {
+        const isAnimating = prevAnimationName !== currentAnimationName;
+        if (wasPresent && isAnimating) {
+          send("ANIMATION_OUT");
+        } else {
+          send("UNMOUNT");
+        }
+      }
+      prevPresentRef.current = present;
+    }
+  }, [present, send]);
+  useLayoutEffect2(() => {
+    if (node) {
+      let timeoutId;
+      const ownerWindow = node.ownerDocument.defaultView ?? window;
+      const handleAnimationEnd = (event) => {
+        const currentAnimationName = getAnimationName(stylesRef.current);
+        const isCurrentAnimation = currentAnimationName.includes(event.animationName);
+        if (event.target === node && isCurrentAnimation) {
+          send("ANIMATION_END");
+          if (!prevPresentRef.current) {
+            const currentFillMode = node.style.animationFillMode;
+            node.style.animationFillMode = "forwards";
+            timeoutId = ownerWindow.setTimeout(() => {
+              if (node.style.animationFillMode === "forwards") {
+                node.style.animationFillMode = currentFillMode;
+              }
+            });
+          }
+        }
+      };
+      const handleAnimationStart = (event) => {
+        if (event.target === node) {
+          prevAnimationNameRef.current = getAnimationName(stylesRef.current);
+        }
+      };
+      node.addEventListener("animationstart", handleAnimationStart);
+      node.addEventListener("animationcancel", handleAnimationEnd);
+      node.addEventListener("animationend", handleAnimationEnd);
+      return () => {
+        ownerWindow.clearTimeout(timeoutId);
+        node.removeEventListener("animationstart", handleAnimationStart);
+        node.removeEventListener("animationcancel", handleAnimationEnd);
+        node.removeEventListener("animationend", handleAnimationEnd);
+      };
+    } else {
+      send("ANIMATION_END");
+    }
+  }, [node, send]);
+  return {
+    isPresent: ["mounted", "unmountSuspended"].includes(state),
+    ref: React.useCallback((node2) => {
+      if (node2) stylesRef.current = getComputedStyle(node2);
+      setNode(node2);
+    }, [])
+  };
+}
+function getAnimationName(styles) {
+  return styles?.animationName || "none";
+}
+function getElementRef(element) {
+  let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
+  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.ref;
+  }
+  getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
+  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.props.ref;
+  }
+  return element.props.ref || element.ref;
+}
+
+// packages/react/context/src/createContext.tsx
+function createContextScope(scopeName, createContextScopeDeps = []) {
+  let defaultContexts = [];
+  function createContext3(rootComponentName, defaultContext) {
+    const BaseContext = React.createContext(defaultContext);
+    const index = defaultContexts.length;
+    defaultContexts = [...defaultContexts, defaultContext];
+    const Provider = (props) => {
+      const { scope, children, ...context } = props;
+      const Context = scope?.[scopeName]?.[index] || BaseContext;
+      const value = React.useMemo(() => context, Object.values(context));
+      return /* @__PURE__ */ jsx(Context.Provider, { value, children });
+    };
+    Provider.displayName = rootComponentName + "Provider";
+    function useContext2(consumerName, scope) {
+      const Context = scope?.[scopeName]?.[index] || BaseContext;
+      const context = React.useContext(Context);
+      if (context) return context;
+      if (defaultContext !== void 0) return defaultContext;
+      throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
+    }
+    return [Provider, useContext2];
+  }
+  const createScope = () => {
+    const scopeContexts = defaultContexts.map((defaultContext) => {
+      return React.createContext(defaultContext);
+    });
+    return function useScope(scope) {
+      const contexts = scope?.[scopeName] || scopeContexts;
+      return React.useMemo(
+        () => ({ [`__scope${scopeName}`]: { ...scope, [scopeName]: contexts } }),
+        [scope, contexts]
+      );
+    };
+  };
+  createScope.scopeName = scopeName;
+  return [createContext3, composeContextScopes(createScope, ...createContextScopeDeps)];
+}
+function composeContextScopes(...scopes) {
+  const baseScope = scopes[0];
+  if (scopes.length === 1) return baseScope;
+  const createScope = () => {
+    const scopeHooks = scopes.map((createScope2) => ({
+      useScope: createScope2(),
+      scopeName: createScope2.scopeName
+    }));
+    return function useComposedScopes(overrideScopes) {
+      const nextScopes = scopeHooks.reduce((nextScopes2, { useScope, scopeName }) => {
+        const scopeProps = useScope(overrideScopes);
+        const currentScope = scopeProps[`__scope${scopeName}`];
+        return { ...nextScopes2, ...currentScope };
+      }, {});
+      return React.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
+    };
+  };
+  createScope.scopeName = baseScope.scopeName;
+  return createScope;
+}
+
+// packages/react/use-callback-ref/src/useCallbackRef.tsx
+function useCallbackRef$1(callback) {
+  const callbackRef = React.useRef(callback);
+  React.useEffect(() => {
+    callbackRef.current = callback;
+  });
+  return React.useMemo(() => (...args) => callbackRef.current?.(...args), []);
+}
+
+// packages/react/direction/src/Direction.tsx
+var DirectionContext = React.createContext(void 0);
+function useDirection(localDir) {
+  const globalDir = React.useContext(DirectionContext);
+  return localDir || globalDir || "ltr";
+}
+
+// packages/core/number/src/number.ts
+function clamp$2(value, [min, max]) {
+  return Math.min(max, Math.max(min, value));
+}
+
+// packages/core/primitive/src/primitive.tsx
+function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
+  return function handleEvent(event) {
+    originalEventHandler?.(event);
+    if (checkForDefaultPrevented === false || !event.defaultPrevented) {
+      return ourEventHandler?.(event);
+    }
+  };
+}
+
+function useStateMachine(initialState, machine) {
+  return React.useReducer((state, event) => {
+    const nextState = machine[state][event];
+    return nextState ?? state;
+  }, initialState);
+}
+var SCROLL_AREA_NAME = "ScrollArea";
+var [createScrollAreaContext, createScrollAreaScope] = createContextScope(SCROLL_AREA_NAME);
+var [ScrollAreaProvider, useScrollAreaContext] = createScrollAreaContext(SCROLL_AREA_NAME);
+var ScrollArea$3 = React.forwardRef(
+  (props, forwardedRef) => {
+    const {
+      __scopeScrollArea,
+      type = "hover",
+      dir,
+      scrollHideDelay = 600,
+      ...scrollAreaProps
+    } = props;
+    const [scrollArea, setScrollArea] = React.useState(null);
+    const [viewport, setViewport] = React.useState(null);
+    const [content, setContent] = React.useState(null);
+    const [scrollbarX, setScrollbarX] = React.useState(null);
+    const [scrollbarY, setScrollbarY] = React.useState(null);
+    const [cornerWidth, setCornerWidth] = React.useState(0);
+    const [cornerHeight, setCornerHeight] = React.useState(0);
+    const [scrollbarXEnabled, setScrollbarXEnabled] = React.useState(false);
+    const [scrollbarYEnabled, setScrollbarYEnabled] = React.useState(false);
+    const composedRefs = useComposedRefs(forwardedRef, (node) => setScrollArea(node));
+    const direction = useDirection(dir);
+    return /* @__PURE__ */ jsx(
+      ScrollAreaProvider,
+      {
+        scope: __scopeScrollArea,
+        type,
+        dir: direction,
+        scrollHideDelay,
+        scrollArea,
+        viewport,
+        onViewportChange: setViewport,
+        content,
+        onContentChange: setContent,
+        scrollbarX,
+        onScrollbarXChange: setScrollbarX,
+        scrollbarXEnabled,
+        onScrollbarXEnabledChange: setScrollbarXEnabled,
+        scrollbarY,
+        onScrollbarYChange: setScrollbarY,
+        scrollbarYEnabled,
+        onScrollbarYEnabledChange: setScrollbarYEnabled,
+        onCornerWidthChange: setCornerWidth,
+        onCornerHeightChange: setCornerHeight,
+        children: /* @__PURE__ */ jsx(
+          Primitive.div,
+          {
+            dir: direction,
+            ...scrollAreaProps,
+            ref: composedRefs,
+            style: {
+              position: "relative",
+              // Pass corner sizes as CSS vars to reduce re-renders of context consumers
+              ["--radix-scroll-area-corner-width"]: cornerWidth + "px",
+              ["--radix-scroll-area-corner-height"]: cornerHeight + "px",
+              ...props.style
+            }
+          }
+        )
+      }
+    );
+  }
+);
+ScrollArea$3.displayName = SCROLL_AREA_NAME;
+var VIEWPORT_NAME$1 = "ScrollAreaViewport";
+var ScrollAreaViewport = React.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeScrollArea, children, nonce, ...viewportProps } = props;
+    const context = useScrollAreaContext(VIEWPORT_NAME$1, __scopeScrollArea);
+    const ref = React.useRef(null);
+    const composedRefs = useComposedRefs(forwardedRef, ref, context.onViewportChange);
+    return /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsx(
+        "style",
+        {
+          dangerouslySetInnerHTML: {
+            __html: `[data-radix-scroll-area-viewport]{scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;}[data-radix-scroll-area-viewport]::-webkit-scrollbar{display:none}`
+          },
+          nonce
+        }
+      ),
+      /* @__PURE__ */ jsx(
+        Primitive.div,
+        {
+          "data-radix-scroll-area-viewport": "",
+          ...viewportProps,
+          ref: composedRefs,
+          style: {
+            /**
+             * We don't support `visible` because the intention is to have at least one scrollbar
+             * if this component is used and `visible` will behave like `auto` in that case
+             * https://developer.mozilla.org/en-US/docs/Web/CSS/overflow#description
+             *
+             * We don't handle `auto` because the intention is for the native implementation
+             * to be hidden if using this component. We just want to ensure the node is scrollable
+             * so could have used either `scroll` or `auto` here. We picked `scroll` to prevent
+             * the browser from having to work out whether to render native scrollbars or not,
+             * we tell it to with the intention of hiding them in CSS.
+             */
+            overflowX: context.scrollbarXEnabled ? "scroll" : "hidden",
+            overflowY: context.scrollbarYEnabled ? "scroll" : "hidden",
+            ...props.style
+          },
+          children: /* @__PURE__ */ jsx("div", { ref: context.onContentChange, style: { minWidth: "100%", display: "table" }, children })
+        }
+      )
+    ] });
+  }
+);
+ScrollAreaViewport.displayName = VIEWPORT_NAME$1;
+var SCROLLBAR_NAME = "ScrollAreaScrollbar";
+var ScrollAreaScrollbar = React.forwardRef(
+  (props, forwardedRef) => {
+    const { forceMount, ...scrollbarProps } = props;
+    const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
+    const { onScrollbarXEnabledChange, onScrollbarYEnabledChange } = context;
+    const isHorizontal = props.orientation === "horizontal";
+    React.useEffect(() => {
+      isHorizontal ? onScrollbarXEnabledChange(true) : onScrollbarYEnabledChange(true);
+      return () => {
+        isHorizontal ? onScrollbarXEnabledChange(false) : onScrollbarYEnabledChange(false);
+      };
+    }, [isHorizontal, onScrollbarXEnabledChange, onScrollbarYEnabledChange]);
+    return context.type === "hover" ? /* @__PURE__ */ jsx(ScrollAreaScrollbarHover, { ...scrollbarProps, ref: forwardedRef, forceMount }) : context.type === "scroll" ? /* @__PURE__ */ jsx(ScrollAreaScrollbarScroll, { ...scrollbarProps, ref: forwardedRef, forceMount }) : context.type === "auto" ? /* @__PURE__ */ jsx(ScrollAreaScrollbarAuto, { ...scrollbarProps, ref: forwardedRef, forceMount }) : context.type === "always" ? /* @__PURE__ */ jsx(ScrollAreaScrollbarVisible, { ...scrollbarProps, ref: forwardedRef }) : null;
+  }
+);
+ScrollAreaScrollbar.displayName = SCROLLBAR_NAME;
+var ScrollAreaScrollbarHover = React.forwardRef((props, forwardedRef) => {
+  const { forceMount, ...scrollbarProps } = props;
+  const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
+  const [visible, setVisible] = React.useState(false);
+  React.useEffect(() => {
+    const scrollArea = context.scrollArea;
+    let hideTimer = 0;
+    if (scrollArea) {
+      const handlePointerEnter = () => {
+        window.clearTimeout(hideTimer);
+        setVisible(true);
+      };
+      const handlePointerLeave = () => {
+        hideTimer = window.setTimeout(() => setVisible(false), context.scrollHideDelay);
+      };
+      scrollArea.addEventListener("pointerenter", handlePointerEnter);
+      scrollArea.addEventListener("pointerleave", handlePointerLeave);
+      return () => {
+        window.clearTimeout(hideTimer);
+        scrollArea.removeEventListener("pointerenter", handlePointerEnter);
+        scrollArea.removeEventListener("pointerleave", handlePointerLeave);
+      };
+    }
+  }, [context.scrollArea, context.scrollHideDelay]);
+  return /* @__PURE__ */ jsx(Presence, { present: forceMount || visible, children: /* @__PURE__ */ jsx(
+    ScrollAreaScrollbarAuto,
+    {
+      "data-state": visible ? "visible" : "hidden",
+      ...scrollbarProps,
+      ref: forwardedRef
+    }
+  ) });
+});
+var ScrollAreaScrollbarScroll = React.forwardRef((props, forwardedRef) => {
+  const { forceMount, ...scrollbarProps } = props;
+  const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
+  const isHorizontal = props.orientation === "horizontal";
+  const debounceScrollEnd = useDebounceCallback(() => send("SCROLL_END"), 100);
+  const [state, send] = useStateMachine("hidden", {
+    hidden: {
+      SCROLL: "scrolling"
+    },
+    scrolling: {
+      SCROLL_END: "idle",
+      POINTER_ENTER: "interacting"
+    },
+    interacting: {
+      SCROLL: "interacting",
+      POINTER_LEAVE: "idle"
+    },
+    idle: {
+      HIDE: "hidden",
+      SCROLL: "scrolling",
+      POINTER_ENTER: "interacting"
+    }
+  });
+  React.useEffect(() => {
+    if (state === "idle") {
+      const hideTimer = window.setTimeout(() => send("HIDE"), context.scrollHideDelay);
+      return () => window.clearTimeout(hideTimer);
+    }
+  }, [state, context.scrollHideDelay, send]);
+  React.useEffect(() => {
+    const viewport = context.viewport;
+    const scrollDirection = isHorizontal ? "scrollLeft" : "scrollTop";
+    if (viewport) {
+      let prevScrollPos = viewport[scrollDirection];
+      const handleScroll = () => {
+        const scrollPos = viewport[scrollDirection];
+        const hasScrollInDirectionChanged = prevScrollPos !== scrollPos;
+        if (hasScrollInDirectionChanged) {
+          send("SCROLL");
+          debounceScrollEnd();
+        }
+        prevScrollPos = scrollPos;
+      };
+      viewport.addEventListener("scroll", handleScroll);
+      return () => viewport.removeEventListener("scroll", handleScroll);
+    }
+  }, [context.viewport, isHorizontal, send, debounceScrollEnd]);
+  return /* @__PURE__ */ jsx(Presence, { present: forceMount || state !== "hidden", children: /* @__PURE__ */ jsx(
+    ScrollAreaScrollbarVisible,
+    {
+      "data-state": state === "hidden" ? "hidden" : "visible",
+      ...scrollbarProps,
+      ref: forwardedRef,
+      onPointerEnter: composeEventHandlers(props.onPointerEnter, () => send("POINTER_ENTER")),
+      onPointerLeave: composeEventHandlers(props.onPointerLeave, () => send("POINTER_LEAVE"))
+    }
+  ) });
+});
+var ScrollAreaScrollbarAuto = React.forwardRef((props, forwardedRef) => {
+  const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
+  const { forceMount, ...scrollbarProps } = props;
+  const [visible, setVisible] = React.useState(false);
+  const isHorizontal = props.orientation === "horizontal";
+  const handleResize = useDebounceCallback(() => {
+    if (context.viewport) {
+      const isOverflowX = context.viewport.offsetWidth < context.viewport.scrollWidth;
+      const isOverflowY = context.viewport.offsetHeight < context.viewport.scrollHeight;
+      setVisible(isHorizontal ? isOverflowX : isOverflowY);
+    }
+  }, 10);
+  useResizeObserver(context.viewport, handleResize);
+  useResizeObserver(context.content, handleResize);
+  return /* @__PURE__ */ jsx(Presence, { present: forceMount || visible, children: /* @__PURE__ */ jsx(
+    ScrollAreaScrollbarVisible,
+    {
+      "data-state": visible ? "visible" : "hidden",
+      ...scrollbarProps,
+      ref: forwardedRef
+    }
+  ) });
+});
+var ScrollAreaScrollbarVisible = React.forwardRef((props, forwardedRef) => {
+  const { orientation = "vertical", ...scrollbarProps } = props;
+  const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
+  const thumbRef = React.useRef(null);
+  const pointerOffsetRef = React.useRef(0);
+  const [sizes, setSizes] = React.useState({
+    content: 0,
+    viewport: 0,
+    scrollbar: { size: 0, paddingStart: 0, paddingEnd: 0 }
+  });
+  const thumbRatio = getThumbRatio(sizes.viewport, sizes.content);
+  const commonProps = {
+    ...scrollbarProps,
+    sizes,
+    onSizesChange: setSizes,
+    hasThumb: Boolean(thumbRatio > 0 && thumbRatio < 1),
+    onThumbChange: (thumb) => thumbRef.current = thumb,
+    onThumbPointerUp: () => pointerOffsetRef.current = 0,
+    onThumbPointerDown: (pointerPos) => pointerOffsetRef.current = pointerPos
+  };
+  function getScrollPosition(pointerPos, dir) {
+    return getScrollPositionFromPointer(pointerPos, pointerOffsetRef.current, sizes, dir);
+  }
+  if (orientation === "horizontal") {
+    return /* @__PURE__ */ jsx(
+      ScrollAreaScrollbarX,
+      {
+        ...commonProps,
+        ref: forwardedRef,
+        onThumbPositionChange: () => {
+          if (context.viewport && thumbRef.current) {
+            const scrollPos = context.viewport.scrollLeft;
+            const offset = getThumbOffsetFromScroll(scrollPos, sizes, context.dir);
+            thumbRef.current.style.transform = `translate3d(${offset}px, 0, 0)`;
+          }
+        },
+        onWheelScroll: (scrollPos) => {
+          if (context.viewport) context.viewport.scrollLeft = scrollPos;
+        },
+        onDragScroll: (pointerPos) => {
+          if (context.viewport) {
+            context.viewport.scrollLeft = getScrollPosition(pointerPos, context.dir);
+          }
+        }
+      }
+    );
+  }
+  if (orientation === "vertical") {
+    return /* @__PURE__ */ jsx(
+      ScrollAreaScrollbarY,
+      {
+        ...commonProps,
+        ref: forwardedRef,
+        onThumbPositionChange: () => {
+          if (context.viewport && thumbRef.current) {
+            const scrollPos = context.viewport.scrollTop;
+            const offset = getThumbOffsetFromScroll(scrollPos, sizes);
+            thumbRef.current.style.transform = `translate3d(0, ${offset}px, 0)`;
+          }
+        },
+        onWheelScroll: (scrollPos) => {
+          if (context.viewport) context.viewport.scrollTop = scrollPos;
+        },
+        onDragScroll: (pointerPos) => {
+          if (context.viewport) context.viewport.scrollTop = getScrollPosition(pointerPos);
+        }
+      }
+    );
+  }
+  return null;
+});
+var ScrollAreaScrollbarX = React.forwardRef((props, forwardedRef) => {
+  const { sizes, onSizesChange, ...scrollbarProps } = props;
+  const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
+  const [computedStyle, setComputedStyle] = React.useState();
+  const ref = React.useRef(null);
+  const composeRefs = useComposedRefs(forwardedRef, ref, context.onScrollbarXChange);
+  React.useEffect(() => {
+    if (ref.current) setComputedStyle(getComputedStyle(ref.current));
+  }, [ref]);
+  return /* @__PURE__ */ jsx(
+    ScrollAreaScrollbarImpl,
+    {
+      "data-orientation": "horizontal",
+      ...scrollbarProps,
+      ref: composeRefs,
+      sizes,
+      style: {
+        bottom: 0,
+        left: context.dir === "rtl" ? "var(--radix-scroll-area-corner-width)" : 0,
+        right: context.dir === "ltr" ? "var(--radix-scroll-area-corner-width)" : 0,
+        ["--radix-scroll-area-thumb-width"]: getThumbSize(sizes) + "px",
+        ...props.style
+      },
+      onThumbPointerDown: (pointerPos) => props.onThumbPointerDown(pointerPos.x),
+      onDragScroll: (pointerPos) => props.onDragScroll(pointerPos.x),
+      onWheelScroll: (event, maxScrollPos) => {
+        if (context.viewport) {
+          const scrollPos = context.viewport.scrollLeft + event.deltaX;
+          props.onWheelScroll(scrollPos);
+          if (isScrollingWithinScrollbarBounds(scrollPos, maxScrollPos)) {
+            event.preventDefault();
+          }
+        }
+      },
+      onResize: () => {
+        if (ref.current && context.viewport && computedStyle) {
+          onSizesChange({
+            content: context.viewport.scrollWidth,
+            viewport: context.viewport.offsetWidth,
+            scrollbar: {
+              size: ref.current.clientWidth,
+              paddingStart: toInt(computedStyle.paddingLeft),
+              paddingEnd: toInt(computedStyle.paddingRight)
+            }
+          });
+        }
+      }
+    }
+  );
+});
+var ScrollAreaScrollbarY = React.forwardRef((props, forwardedRef) => {
+  const { sizes, onSizesChange, ...scrollbarProps } = props;
+  const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
+  const [computedStyle, setComputedStyle] = React.useState();
+  const ref = React.useRef(null);
+  const composeRefs = useComposedRefs(forwardedRef, ref, context.onScrollbarYChange);
+  React.useEffect(() => {
+    if (ref.current) setComputedStyle(getComputedStyle(ref.current));
+  }, [ref]);
+  return /* @__PURE__ */ jsx(
+    ScrollAreaScrollbarImpl,
+    {
+      "data-orientation": "vertical",
+      ...scrollbarProps,
+      ref: composeRefs,
+      sizes,
+      style: {
+        top: 0,
+        right: context.dir === "ltr" ? 0 : void 0,
+        left: context.dir === "rtl" ? 0 : void 0,
+        bottom: "var(--radix-scroll-area-corner-height)",
+        ["--radix-scroll-area-thumb-height"]: getThumbSize(sizes) + "px",
+        ...props.style
+      },
+      onThumbPointerDown: (pointerPos) => props.onThumbPointerDown(pointerPos.y),
+      onDragScroll: (pointerPos) => props.onDragScroll(pointerPos.y),
+      onWheelScroll: (event, maxScrollPos) => {
+        if (context.viewport) {
+          const scrollPos = context.viewport.scrollTop + event.deltaY;
+          props.onWheelScroll(scrollPos);
+          if (isScrollingWithinScrollbarBounds(scrollPos, maxScrollPos)) {
+            event.preventDefault();
+          }
+        }
+      },
+      onResize: () => {
+        if (ref.current && context.viewport && computedStyle) {
+          onSizesChange({
+            content: context.viewport.scrollHeight,
+            viewport: context.viewport.offsetHeight,
+            scrollbar: {
+              size: ref.current.clientHeight,
+              paddingStart: toInt(computedStyle.paddingTop),
+              paddingEnd: toInt(computedStyle.paddingBottom)
+            }
+          });
+        }
+      }
+    }
+  );
+});
+var [ScrollbarProvider, useScrollbarContext] = createScrollAreaContext(SCROLLBAR_NAME);
+var ScrollAreaScrollbarImpl = React.forwardRef((props, forwardedRef) => {
+  const {
+    __scopeScrollArea,
+    sizes,
+    hasThumb,
+    onThumbChange,
+    onThumbPointerUp,
+    onThumbPointerDown,
+    onThumbPositionChange,
+    onDragScroll,
+    onWheelScroll,
+    onResize,
+    ...scrollbarProps
+  } = props;
+  const context = useScrollAreaContext(SCROLLBAR_NAME, __scopeScrollArea);
+  const [scrollbar, setScrollbar] = React.useState(null);
+  const composeRefs = useComposedRefs(forwardedRef, (node) => setScrollbar(node));
+  const rectRef = React.useRef(null);
+  const prevWebkitUserSelectRef = React.useRef("");
+  const viewport = context.viewport;
+  const maxScrollPos = sizes.content - sizes.viewport;
+  const handleWheelScroll = useCallbackRef$1(onWheelScroll);
+  const handleThumbPositionChange = useCallbackRef$1(onThumbPositionChange);
+  const handleResize = useDebounceCallback(onResize, 10);
+  function handleDragScroll(event) {
+    if (rectRef.current) {
+      const x = event.clientX - rectRef.current.left;
+      const y = event.clientY - rectRef.current.top;
+      onDragScroll({ x, y });
+    }
+  }
+  React.useEffect(() => {
+    const handleWheel = (event) => {
+      const element = event.target;
+      const isScrollbarWheel = scrollbar?.contains(element);
+      if (isScrollbarWheel) handleWheelScroll(event, maxScrollPos);
+    };
+    document.addEventListener("wheel", handleWheel, { passive: false });
+    return () => document.removeEventListener("wheel", handleWheel, { passive: false });
+  }, [viewport, scrollbar, maxScrollPos, handleWheelScroll]);
+  React.useEffect(handleThumbPositionChange, [sizes, handleThumbPositionChange]);
+  useResizeObserver(scrollbar, handleResize);
+  useResizeObserver(context.content, handleResize);
+  return /* @__PURE__ */ jsx(
+    ScrollbarProvider,
+    {
+      scope: __scopeScrollArea,
+      scrollbar,
+      hasThumb,
+      onThumbChange: useCallbackRef$1(onThumbChange),
+      onThumbPointerUp: useCallbackRef$1(onThumbPointerUp),
+      onThumbPositionChange: handleThumbPositionChange,
+      onThumbPointerDown: useCallbackRef$1(onThumbPointerDown),
+      children: /* @__PURE__ */ jsx(
+        Primitive.div,
+        {
+          ...scrollbarProps,
+          ref: composeRefs,
+          style: { position: "absolute", ...scrollbarProps.style },
+          onPointerDown: composeEventHandlers(props.onPointerDown, (event) => {
+            const mainPointer = 0;
+            if (event.button === mainPointer) {
+              const element = event.target;
+              element.setPointerCapture(event.pointerId);
+              rectRef.current = scrollbar.getBoundingClientRect();
+              prevWebkitUserSelectRef.current = document.body.style.webkitUserSelect;
+              document.body.style.webkitUserSelect = "none";
+              if (context.viewport) context.viewport.style.scrollBehavior = "auto";
+              handleDragScroll(event);
+            }
+          }),
+          onPointerMove: composeEventHandlers(props.onPointerMove, handleDragScroll),
+          onPointerUp: composeEventHandlers(props.onPointerUp, (event) => {
+            const element = event.target;
+            if (element.hasPointerCapture(event.pointerId)) {
+              element.releasePointerCapture(event.pointerId);
+            }
+            document.body.style.webkitUserSelect = prevWebkitUserSelectRef.current;
+            if (context.viewport) context.viewport.style.scrollBehavior = "";
+            rectRef.current = null;
+          })
+        }
+      )
+    }
+  );
+});
+var THUMB_NAME$2 = "ScrollAreaThumb";
+var ScrollAreaThumb = React.forwardRef(
+  (props, forwardedRef) => {
+    const { forceMount, ...thumbProps } = props;
+    const scrollbarContext = useScrollbarContext(THUMB_NAME$2, props.__scopeScrollArea);
+    return /* @__PURE__ */ jsx(Presence, { present: forceMount || scrollbarContext.hasThumb, children: /* @__PURE__ */ jsx(ScrollAreaThumbImpl, { ref: forwardedRef, ...thumbProps }) });
+  }
+);
+var ScrollAreaThumbImpl = React.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeScrollArea, style, ...thumbProps } = props;
+    const scrollAreaContext = useScrollAreaContext(THUMB_NAME$2, __scopeScrollArea);
+    const scrollbarContext = useScrollbarContext(THUMB_NAME$2, __scopeScrollArea);
+    const { onThumbPositionChange } = scrollbarContext;
+    const composedRef = useComposedRefs(
+      forwardedRef,
+      (node) => scrollbarContext.onThumbChange(node)
+    );
+    const removeUnlinkedScrollListenerRef = React.useRef(void 0);
+    const debounceScrollEnd = useDebounceCallback(() => {
+      if (removeUnlinkedScrollListenerRef.current) {
+        removeUnlinkedScrollListenerRef.current();
+        removeUnlinkedScrollListenerRef.current = void 0;
+      }
+    }, 100);
+    React.useEffect(() => {
+      const viewport = scrollAreaContext.viewport;
+      if (viewport) {
+        const handleScroll = () => {
+          debounceScrollEnd();
+          if (!removeUnlinkedScrollListenerRef.current) {
+            const listener = addUnlinkedScrollListener(viewport, onThumbPositionChange);
+            removeUnlinkedScrollListenerRef.current = listener;
+            onThumbPositionChange();
+          }
+        };
+        onThumbPositionChange();
+        viewport.addEventListener("scroll", handleScroll);
+        return () => viewport.removeEventListener("scroll", handleScroll);
+      }
+    }, [scrollAreaContext.viewport, debounceScrollEnd, onThumbPositionChange]);
+    return /* @__PURE__ */ jsx(
+      Primitive.div,
+      {
+        "data-state": scrollbarContext.hasThumb ? "visible" : "hidden",
+        ...thumbProps,
+        ref: composedRef,
+        style: {
+          width: "var(--radix-scroll-area-thumb-width)",
+          height: "var(--radix-scroll-area-thumb-height)",
+          ...style
+        },
+        onPointerDownCapture: composeEventHandlers(props.onPointerDownCapture, (event) => {
+          const thumb = event.target;
+          const thumbRect = thumb.getBoundingClientRect();
+          const x = event.clientX - thumbRect.left;
+          const y = event.clientY - thumbRect.top;
+          scrollbarContext.onThumbPointerDown({ x, y });
+        }),
+        onPointerUp: composeEventHandlers(props.onPointerUp, scrollbarContext.onThumbPointerUp)
+      }
+    );
+  }
+);
+ScrollAreaThumb.displayName = THUMB_NAME$2;
+var CORNER_NAME = "ScrollAreaCorner";
+var ScrollAreaCorner = React.forwardRef(
+  (props, forwardedRef) => {
+    const context = useScrollAreaContext(CORNER_NAME, props.__scopeScrollArea);
+    const hasBothScrollbarsVisible = Boolean(context.scrollbarX && context.scrollbarY);
+    const hasCorner = context.type !== "scroll" && hasBothScrollbarsVisible;
+    return hasCorner ? /* @__PURE__ */ jsx(ScrollAreaCornerImpl, { ...props, ref: forwardedRef }) : null;
+  }
+);
+ScrollAreaCorner.displayName = CORNER_NAME;
+var ScrollAreaCornerImpl = React.forwardRef((props, forwardedRef) => {
+  const { __scopeScrollArea, ...cornerProps } = props;
+  const context = useScrollAreaContext(CORNER_NAME, __scopeScrollArea);
+  const [width, setWidth] = React.useState(0);
+  const [height, setHeight] = React.useState(0);
+  const hasSize = Boolean(width && height);
+  useResizeObserver(context.scrollbarX, () => {
+    const height2 = context.scrollbarX?.offsetHeight || 0;
+    context.onCornerHeightChange(height2);
+    setHeight(height2);
+  });
+  useResizeObserver(context.scrollbarY, () => {
+    const width2 = context.scrollbarY?.offsetWidth || 0;
+    context.onCornerWidthChange(width2);
+    setWidth(width2);
+  });
+  return hasSize ? /* @__PURE__ */ jsx(
+    Primitive.div,
+    {
+      ...cornerProps,
+      ref: forwardedRef,
+      style: {
+        width,
+        height,
+        position: "absolute",
+        right: context.dir === "ltr" ? 0 : void 0,
+        left: context.dir === "rtl" ? 0 : void 0,
+        bottom: 0,
+        ...props.style
+      }
+    }
+  ) : null;
+});
+function toInt(value) {
+  return value ? parseInt(value, 10) : 0;
+}
+function getThumbRatio(viewportSize, contentSize) {
+  const ratio = viewportSize / contentSize;
+  return isNaN(ratio) ? 0 : ratio;
+}
+function getThumbSize(sizes) {
+  const ratio = getThumbRatio(sizes.viewport, sizes.content);
+  const scrollbarPadding = sizes.scrollbar.paddingStart + sizes.scrollbar.paddingEnd;
+  const thumbSize = (sizes.scrollbar.size - scrollbarPadding) * ratio;
+  return Math.max(thumbSize, 18);
+}
+function getScrollPositionFromPointer(pointerPos, pointerOffset, sizes, dir = "ltr") {
+  const thumbSizePx = getThumbSize(sizes);
+  const thumbCenter = thumbSizePx / 2;
+  const offset = pointerOffset || thumbCenter;
+  const thumbOffsetFromEnd = thumbSizePx - offset;
+  const minPointerPos = sizes.scrollbar.paddingStart + offset;
+  const maxPointerPos = sizes.scrollbar.size - sizes.scrollbar.paddingEnd - thumbOffsetFromEnd;
+  const maxScrollPos = sizes.content - sizes.viewport;
+  const scrollRange = dir === "ltr" ? [0, maxScrollPos] : [maxScrollPos * -1, 0];
+  const interpolate = linearScale$1([minPointerPos, maxPointerPos], scrollRange);
+  return interpolate(pointerPos);
+}
+function getThumbOffsetFromScroll(scrollPos, sizes, dir = "ltr") {
+  const thumbSizePx = getThumbSize(sizes);
+  const scrollbarPadding = sizes.scrollbar.paddingStart + sizes.scrollbar.paddingEnd;
+  const scrollbar = sizes.scrollbar.size - scrollbarPadding;
+  const maxScrollPos = sizes.content - sizes.viewport;
+  const maxThumbPos = scrollbar - thumbSizePx;
+  const scrollClampRange = dir === "ltr" ? [0, maxScrollPos] : [maxScrollPos * -1, 0];
+  const scrollWithoutMomentum = clamp$2(scrollPos, scrollClampRange);
+  const interpolate = linearScale$1([0, maxScrollPos], [0, maxThumbPos]);
+  return interpolate(scrollWithoutMomentum);
+}
+function linearScale$1(input, output) {
+  return (value) => {
+    if (input[0] === input[1] || output[0] === output[1]) return output[0];
+    const ratio = (output[1] - output[0]) / (input[1] - input[0]);
+    return output[0] + ratio * (value - input[0]);
+  };
+}
+function isScrollingWithinScrollbarBounds(scrollPos, maxScrollPos) {
+  return scrollPos > 0 && scrollPos < maxScrollPos;
+}
+var addUnlinkedScrollListener = (node, handler = () => {
+}) => {
+  let prevPosition = { left: node.scrollLeft, top: node.scrollTop };
+  let rAF = 0;
+  (function loop() {
+    const position = { left: node.scrollLeft, top: node.scrollTop };
+    const isHorizontalScroll = prevPosition.left !== position.left;
+    const isVerticalScroll = prevPosition.top !== position.top;
+    if (isHorizontalScroll || isVerticalScroll) handler();
+    prevPosition = position;
+    rAF = window.requestAnimationFrame(loop);
+  })();
+  return () => window.cancelAnimationFrame(rAF);
+};
+function useDebounceCallback(callback, delay) {
+  const handleCallback = useCallbackRef$1(callback);
+  const debounceTimerRef = React.useRef(0);
+  React.useEffect(() => () => window.clearTimeout(debounceTimerRef.current), []);
+  return React.useCallback(() => {
+    window.clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = window.setTimeout(handleCallback, delay);
+  }, [handleCallback, delay]);
+}
+function useResizeObserver(element, onResize) {
+  const handleResize = useCallbackRef$1(onResize);
+  useLayoutEffect2(() => {
+    let rAF = 0;
+    if (element) {
+      const resizeObserver = new ResizeObserver(() => {
+        cancelAnimationFrame(rAF);
+        rAF = window.requestAnimationFrame(handleResize);
+      });
+      resizeObserver.observe(element);
+      return () => {
+        window.cancelAnimationFrame(rAF);
+        resizeObserver.unobserve(element);
+      };
+    }
+  }, [element, handleResize]);
+}
+var Root$8 = ScrollArea$3;
+var Viewport$1 = ScrollAreaViewport;
+var Corner = ScrollAreaCorner;
 
 function r(e){var t,f,n="";if("string"==typeof e||"number"==typeof e)n+=e;else if("object"==typeof e)if(Array.isArray(e)){var o=e.length;for(t=0;t<o;t++)e[t]&&(f=r(e[t]))&&(n&&(n+=" "),n+=f);}else for(f in e)e[f]&&(n&&(n+=" "),n+=f);return n}function clsx(){for(var e,t,f=0,n="",o=arguments.length;f<o;f++)(e=arguments[f])&&(t=r(e))&&(n&&(n+=" "),n+=t);return n}
 
@@ -2560,225 +3631,35 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-const Card$1 = /*#__PURE__*/React.forwardRef((_a, ref) => {
+const ScrollArea$2 = /*#__PURE__*/React.forwardRef((_a, ref) => {
   var {
-      className
+      className,
+      children
     } = _a,
-    props = __rest(_a, ["className"]);
-  return /*#__PURE__*/React.createElement("div", _extends({
+    props = __rest(_a, ["className", "children"]);
+  return /*#__PURE__*/React.createElement(Root$8, _extends({
     ref: ref,
-    className: cn("rounded-xl border bg-card text-card-foreground shadow", className)
-  }, props));
+    className: cn("relative overflow-hidden", className)
+  }, props), /*#__PURE__*/React.createElement(Viewport$1, {
+    className: "h-full w-full rounded-[inherit]"
+  }, children), /*#__PURE__*/React.createElement(ScrollBar$1, null), /*#__PURE__*/React.createElement(Corner, null));
 });
-Card$1.displayName = "Card";
-const CardHeader = /*#__PURE__*/React.forwardRef((_a, ref) => {
+ScrollArea$2.displayName = Root$8.displayName;
+const ScrollBar$1 = /*#__PURE__*/React.forwardRef((_a, ref) => {
   var {
-      className
+      className,
+      orientation = "vertical"
     } = _a,
-    props = __rest(_a, ["className"]);
-  return /*#__PURE__*/React.createElement("div", _extends({
+    props = __rest(_a, ["className", "orientation"]);
+  return /*#__PURE__*/React.createElement(ScrollAreaScrollbar, _extends({
     ref: ref,
-    className: cn("flex flex-col space-y-1.5 p-6", className)
-  }, props));
+    orientation: orientation,
+    className: cn("flex touch-none select-none transition-colors", orientation === "vertical" && "h-full w-2.5 border-l border-l-transparent p-[1px]", orientation === "horizontal" && "h-2.5 flex-col border-t border-t-transparent p-[1px]", className)
+  }, props), /*#__PURE__*/React.createElement(ScrollAreaThumb, {
+    className: "relative flex-1 rounded-full bg-border"
+  }));
 });
-CardHeader.displayName = "CardHeader";
-const CardTitle = /*#__PURE__*/React.forwardRef((_a, ref) => {
-  var {
-      className
-    } = _a,
-    props = __rest(_a, ["className"]);
-  return /*#__PURE__*/React.createElement("div", _extends({
-    ref: ref,
-    className: cn("font-semibold leading-none tracking-tight", className)
-  }, props));
-});
-CardTitle.displayName = "CardTitle";
-const CardDescription = /*#__PURE__*/React.forwardRef((_a, ref) => {
-  var {
-      className
-    } = _a,
-    props = __rest(_a, ["className"]);
-  return /*#__PURE__*/React.createElement("div", _extends({
-    ref: ref,
-    className: cn("text-sm text-muted-foreground", className)
-  }, props));
-});
-CardDescription.displayName = "CardDescription";
-const CardContent = /*#__PURE__*/React.forwardRef((_a, ref) => {
-  var {
-      className
-    } = _a,
-    props = __rest(_a, ["className"]);
-  return /*#__PURE__*/React.createElement("div", _extends({
-    ref: ref,
-    className: cn("p-6 pt-0", className)
-  }, props));
-});
-CardContent.displayName = "CardContent";
-const CardFooter = /*#__PURE__*/React.forwardRef((_a, ref) => {
-  var {
-      className
-    } = _a,
-    props = __rest(_a, ["className"]);
-  return /*#__PURE__*/React.createElement("div", _extends({
-    ref: ref,
-    className: cn("flex items-center p-6 pt-0", className)
-  }, props));
-});
-CardFooter.displayName = "CardFooter";
-
-// packages/react/compose-refs/src/composeRefs.tsx
-function setRef(ref, value) {
-  if (typeof ref === "function") {
-    return ref(value);
-  } else if (ref !== null && ref !== void 0) {
-    ref.current = value;
-  }
-}
-function composeRefs(...refs) {
-  return (node) => {
-    let hasCleanup = false;
-    const cleanups = refs.map((ref) => {
-      const cleanup = setRef(ref, node);
-      if (!hasCleanup && typeof cleanup == "function") {
-        hasCleanup = true;
-      }
-      return cleanup;
-    });
-    if (hasCleanup) {
-      return () => {
-        for (let i = 0; i < cleanups.length; i++) {
-          const cleanup = cleanups[i];
-          if (typeof cleanup == "function") {
-            cleanup();
-          } else {
-            setRef(refs[i], null);
-          }
-        }
-      };
-    }
-  };
-}
-function useComposedRefs(...refs) {
-  return React.useCallback(composeRefs(...refs), refs);
-}
-
-// packages/react/slot/src/Slot.tsx
-var Slot = React.forwardRef((props, forwardedRef) => {
-  const { children, ...slotProps } = props;
-  const childrenArray = React.Children.toArray(children);
-  const slottable = childrenArray.find(isSlottable);
-  if (slottable) {
-    const newElement = slottable.props.children;
-    const newChildren = childrenArray.map((child) => {
-      if (child === slottable) {
-        if (React.Children.count(newElement) > 1) return React.Children.only(null);
-        return React.isValidElement(newElement) ? newElement.props.children : null;
-      } else {
-        return child;
-      }
-    });
-    return /* @__PURE__ */ jsx(SlotClone, { ...slotProps, ref: forwardedRef, children: React.isValidElement(newElement) ? React.cloneElement(newElement, void 0, newChildren) : null });
-  }
-  return /* @__PURE__ */ jsx(SlotClone, { ...slotProps, ref: forwardedRef, children });
-});
-Slot.displayName = "Slot";
-var SlotClone = React.forwardRef((props, forwardedRef) => {
-  const { children, ...slotProps } = props;
-  if (React.isValidElement(children)) {
-    const childrenRef = getElementRef$1(children);
-    return React.cloneElement(children, {
-      ...mergeProps(slotProps, children.props),
-      // @ts-ignore
-      ref: forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef
-    });
-  }
-  return React.Children.count(children) > 1 ? React.Children.only(null) : null;
-});
-SlotClone.displayName = "SlotClone";
-var Slottable = ({ children }) => {
-  return /* @__PURE__ */ jsx(Fragment, { children });
-};
-function isSlottable(child) {
-  return React.isValidElement(child) && child.type === Slottable;
-}
-function mergeProps(slotProps, childProps) {
-  const overrideProps = { ...childProps };
-  for (const propName in childProps) {
-    const slotPropValue = slotProps[propName];
-    const childPropValue = childProps[propName];
-    const isHandler = /^on[A-Z]/.test(propName);
-    if (isHandler) {
-      if (slotPropValue && childPropValue) {
-        overrideProps[propName] = (...args) => {
-          childPropValue(...args);
-          slotPropValue(...args);
-        };
-      } else if (slotPropValue) {
-        overrideProps[propName] = slotPropValue;
-      }
-    } else if (propName === "style") {
-      overrideProps[propName] = { ...slotPropValue, ...childPropValue };
-    } else if (propName === "className") {
-      overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
-    }
-  }
-  return { ...slotProps, ...overrideProps };
-}
-function getElementRef$1(element) {
-  let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-
-const falsyToString = (value)=>typeof value === "boolean" ? `${value}` : value === 0 ? "0" : value;
-const cx = clsx;
-const cva = (base, config)=>(props)=>{
-        var _config_compoundVariants;
-        if ((config === null || config === void 0 ? void 0 : config.variants) == null) return cx(base, props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
-        const { variants, defaultVariants } = config;
-        const getVariantClassNames = Object.keys(variants).map((variant)=>{
-            const variantProp = props === null || props === void 0 ? void 0 : props[variant];
-            const defaultVariantProp = defaultVariants === null || defaultVariants === void 0 ? void 0 : defaultVariants[variant];
-            if (variantProp === null) return null;
-            const variantKey = falsyToString(variantProp) || falsyToString(defaultVariantProp);
-            return variants[variant][variantKey];
-        });
-        const propsWithoutUndefined = props && Object.entries(props).reduce((acc, param)=>{
-            let [key, value] = param;
-            if (value === undefined) {
-                return acc;
-            }
-            acc[key] = value;
-            return acc;
-        }, {});
-        const getCompoundVariantClassNames = config === null || config === void 0 ? void 0 : (_config_compoundVariants = config.compoundVariants) === null || _config_compoundVariants === void 0 ? void 0 : _config_compoundVariants.reduce((acc, param)=>{
-            let { class: cvClass, className: cvClassName, ...compoundVariantOptions } = param;
-            return Object.entries(compoundVariantOptions).every((param)=>{
-                let [key, value] = param;
-                return Array.isArray(value) ? value.includes({
-                    ...defaultVariants,
-                    ...propsWithoutUndefined
-                }[key]) : ({
-                    ...defaultVariants,
-                    ...propsWithoutUndefined
-                })[key] === value;
-            }) ? [
-                ...acc,
-                cvClass,
-                cvClassName
-            ] : acc;
-        }, []);
-        return cx(base, getVariantClassNames, getCompoundVariantClassNames, props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
-    };
+ScrollBar$1.displayName = ScrollAreaScrollbar.displayName;
 
 const STREAM_CLOSE_DELAY = 2000; // Time in milliseconds to wait before closing the stream after the last chunk
 const BUFFER_QUEUE_THRESHOLD = 3; // Minimum number of chunks to queue before starting playback
@@ -3560,71 +4441,46 @@ const WebSocketStatus = () => {
 };
 // TODO: Batch send in websocket
 
-const withEventLogging = WrappedComponent => {
-  const WithEventLogging = props => {
-    const messageContext = useContext(MessageContext);
-    const {
-      sendLog
-    } = useWebSocketLogger();
-    // Create a stable log message creator
-    const createLogMessage = useCallback((event, target, value) => {
-      return Object.assign({
-        messageId: crypto.randomUUID(),
-        isPlaying: false,
-        timestamp: new Date().toISOString(),
-        componentName: WrappedComponent.displayName || WrappedComponent.name || 'UnnamedComponent',
-        event,
-        id: target.getAttribute('id')
-      }, value && {
-        value
-      });
-    }, []);
-    // Helper function to create a LogMessage with type 'log'
-    const createLogMessageWithLogType = message => Object.assign(Object.assign({}, message), {
-      type: 'log'
-    });
-    // Memoize the event wrapper creators
-    const wrapClickHandler = useCallback(handler => {
-      return event => {
-        const logMessage = createLogMessageWithLogType(createLogMessage('click', event.currentTarget));
-        // messageContext?.setMessages(prev => [...prev, logMessage]);
-        sendLog(logMessage);
-        handler === null || handler === void 0 ? void 0 : handler(event);
-      };
-    }, [messageContext, createLogMessage, sendLog]);
-    const wrapChangeHandler = useCallback(handler => {
-      return event => {
-        const logMessage = createLogMessageWithLogType(createLogMessage('change', event.currentTarget, event.currentTarget.value));
-        // messageContext?.setMessages(prev => [...prev, logMessage]);
-        sendLog(logMessage);
-        handler === null || handler === void 0 ? void 0 : handler(event);
-      };
-    }, [messageContext, createLogMessage, sendLog]);
-    // Memoize the wrapped handlers
-    const wrappedHandlers = useMemo(() => {
-      const newProps = {};
-      Object.entries(props).forEach(([key, value]) => {
-        if (typeof value === 'function') {
-          if (key.toLowerCase().includes('click')) {
-            newProps[key] = wrapClickHandler(value);
-          } else if (key.toLowerCase().includes('change')) {
-            newProps[key] = wrapChangeHandler(value);
-          } else {
-            newProps[key] = value;
-          }
-        } else {
-          newProps[key] = value;
-        }
-      });
-      return newProps;
-    }, [props, wrapClickHandler, wrapChangeHandler]);
-    return /*#__PURE__*/React__default.createElement(WrappedComponent, wrappedHandlers);
-  };
-  // Optimize the display name for debugging
-  WithEventLogging.displayName = `WithEventLogging(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
-  // No need for an additional React.memo here since we're already memoizing properly
-  return WithEventLogging;
-};
+const falsyToString = (value)=>typeof value === "boolean" ? `${value}` : value === 0 ? "0" : value;
+const cx = clsx;
+const cva = (base, config)=>(props)=>{
+        var _config_compoundVariants;
+        if ((config === null || config === void 0 ? void 0 : config.variants) == null) return cx(base, props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
+        const { variants, defaultVariants } = config;
+        const getVariantClassNames = Object.keys(variants).map((variant)=>{
+            const variantProp = props === null || props === void 0 ? void 0 : props[variant];
+            const defaultVariantProp = defaultVariants === null || defaultVariants === void 0 ? void 0 : defaultVariants[variant];
+            if (variantProp === null) return null;
+            const variantKey = falsyToString(variantProp) || falsyToString(defaultVariantProp);
+            return variants[variant][variantKey];
+        });
+        const propsWithoutUndefined = props && Object.entries(props).reduce((acc, param)=>{
+            let [key, value] = param;
+            if (value === undefined) {
+                return acc;
+            }
+            acc[key] = value;
+            return acc;
+        }, {});
+        const getCompoundVariantClassNames = config === null || config === void 0 ? void 0 : (_config_compoundVariants = config.compoundVariants) === null || _config_compoundVariants === void 0 ? void 0 : _config_compoundVariants.reduce((acc, param)=>{
+            let { class: cvClass, className: cvClassName, ...compoundVariantOptions } = param;
+            return Object.entries(compoundVariantOptions).every((param)=>{
+                let [key, value] = param;
+                return Array.isArray(value) ? value.includes({
+                    ...defaultVariants,
+                    ...propsWithoutUndefined
+                }[key]) : ({
+                    ...defaultVariants,
+                    ...propsWithoutUndefined
+                })[key] === value;
+            }) ? [
+                ...acc,
+                cvClass,
+                cvClassName
+            ] : acc;
+        }, []);
+        return cx(base, getVariantClassNames, getCompoundVariantClassNames, props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
+    };
 
 const buttonVariants$1 = cva("inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0", {
   variants: {
@@ -3648,7 +4504,7 @@ const buttonVariants$1 = cva("inline-flex items-center justify-center gap-2 whit
     size: "default"
   }
 });
-const MyButton = /*#__PURE__*/React.forwardRef((_a, ref) => {
+const Button$2 = /*#__PURE__*/React.forwardRef((_a, ref) => {
   var {
       className,
       variant,
@@ -3666,8 +4522,21 @@ const MyButton = /*#__PURE__*/React.forwardRef((_a, ref) => {
     ref: ref
   }, props));
 });
-MyButton.displayName = "Button";
-const Button$2 = withEventLogging(MyButton);
+Button$2.displayName = "Button";
+
+const Input = /*#__PURE__*/React.forwardRef((_a, ref) => {
+  var {
+      className,
+      type
+    } = _a,
+    props = __rest(_a, ["className", "type"]);
+  return /*#__PURE__*/React.createElement("input", _extends({
+    type: type,
+    className: cn("flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm", className),
+    ref: ref
+  }, props));
+});
+Input.displayName = "Input";
 
 const warned = new Set();
 function warnOnce(condition, message, element) {
@@ -4196,7 +5065,7 @@ function getVariableValue(current, element, depth = 1) {
         : fallback;
 }
 
-const clamp$2 = (min, max, v) => {
+const clamp$1 = (min, max, v) => {
     if (v > max)
         return max;
     if (v < min)
@@ -4211,7 +5080,7 @@ const number = {
 };
 const alpha = {
     ...number,
-    transform: (v) => clamp$2(0, 1, v),
+    transform: (v) => clamp$1(0, 1, v),
 };
 const scale = {
     ...number,
@@ -4512,7 +5381,7 @@ const splitColor = (aName, bName, cName) => (v) => {
     };
 };
 
-const clampRgbUnit = (v) => clamp$2(0, 255, v);
+const clampRgbUnit = (v) => clamp$1(0, 255, v);
 const rgbUnit = {
     ...number,
     transform: (v) => Math.round(clampRgbUnit(v)),
@@ -5266,8 +6135,8 @@ function findSpring({ duration = springDefaults.duration, bounce = springDefault
     /**
      * Restrict dampingRatio and duration to within acceptable ranges.
      */
-    dampingRatio = clamp$2(springDefaults.minDamping, springDefaults.maxDamping, dampingRatio);
-    duration = clamp$2(springDefaults.minDuration, springDefaults.maxDuration, millisecondsToSeconds(duration));
+    dampingRatio = clamp$1(springDefaults.minDamping, springDefaults.maxDamping, dampingRatio);
+    duration = clamp$1(springDefaults.minDuration, springDefaults.maxDuration, millisecondsToSeconds(duration));
     if (dampingRatio < 1) {
         /**
          * Underdamped spring
@@ -5374,7 +6243,7 @@ function getSpringOptions(options) {
             const visualDuration = options.visualDuration;
             const root = (2 * Math.PI) / (visualDuration * 1.2);
             const stiffness = root * root;
-            const damping = 2 * clamp$2(0.05, 1, 1 - options.bounce) * Math.sqrt(stiffness);
+            const damping = 2 * clamp$1(0.05, 1, 1 - options.bounce) * Math.sqrt(stiffness);
             springOptions = {
                 ...springOptions,
                 mass: springDefaults.mass,
@@ -5919,7 +6788,7 @@ function interpolate(input, output, { clamp: isClamp = true, ease, mixer } = {})
         return mixers[i](progressInRange);
     };
     return isClamp
-        ? (v) => interpolator(clamp$2(input[0], input[inputLength - 1], v))
+        ? (v) => interpolator(clamp$1(input[0], input[inputLength - 1], v))
         : interpolator;
 }
 
@@ -6222,7 +7091,7 @@ class MainThreadAnimation extends BaseAnimation {
                     frameGenerator = mirroredGenerator;
                 }
             }
-            elapsed = clamp$2(0, 1, iterationProgress) * resolvedDuration;
+            elapsed = clamp$1(0, 1, iterationProgress) * resolvedDuration;
         }
         /**
          * If we're in negative time, set state as the initial keyframe.
@@ -8508,7 +9377,7 @@ function calcOrigin$1(source, target) {
     else if (sourceLength > targetLength) {
         origin = progress(source.min, source.max - targetLength, target.min);
     }
-    return clamp$2(0, 1, origin);
+    return clamp$1(0, 1, origin);
 }
 /**
  * Rebase the calculated viewport constraints relative to the layout.min point.
@@ -9316,7 +10185,7 @@ const PresenceContext = createContext(null);
  *
  * @public
  */
-function usePresence$1() {
+function usePresence() {
     const context = useContext(PresenceContext);
     if (context === null)
         return [true, null];
@@ -9529,7 +10398,7 @@ class MeasureLayoutWithContext extends Component {
     }
 }
 function MeasureLayout(props) {
-    const [isPresent, safeToRemove] = usePresence$1();
+    const [isPresent, safeToRemove] = usePresence();
     const layoutGroup = useContext(LayoutGroupContext);
     return (jsx(MeasureLayoutWithContext, { ...props, layoutGroup: layoutGroup, switchLayoutGroup: useContext(SwitchLayoutGroupContext), isPresent: isPresent, safeToRemove: safeToRemove }));
 }
@@ -10387,7 +11256,7 @@ function createProjectionNode$1({ attachResizeListener, defaultParent, measureSc
              * to leave a flash of incorrectly styled content.
              */
             const now = time$1.now();
-            frameData.delta = clamp$2(0, 1000 / 60, now - frameData.timestamp);
+            frameData.delta = clamp$1(0, 1000 / 60, now - frameData.timestamp);
             frameData.timestamp = now;
             frameData.isProcessing = true;
             frameSteps.update.process(frameData);
@@ -13756,2951 +14625,6 @@ const AnimatePresence = ({ children, exitBeforeEnter, custom, initial = true, on
         }) }));
 };
 
-// Expanded and more diverse emoji list
-const celebrationEmojis = ['🎉', '🎊', '🎈', '🥳', '✨', '🚀', '💥', '🌟', '🏆'];
-const SuccessAnimation$1 = () => {
-  // Set the state with the defined type
-  const [emojis, setEmojis] = useState([]);
-  // Enhanced randomization functions
-  const getRandomEmoji = () => celebrationEmojis[Math.floor(Math.random() * celebrationEmojis.length)];
-  const getRandomPosition = () => ({
-    x: Math.random() * window.innerWidth,
-    delay: Math.random() * 1,
-    duration: Math.random() * 3 + 2
-  });
-  // Continuous emoji generation with staggered approach
-  useEffect(() => {
-    const generateNewEmoji = () => {
-      const newEmoji = Object.assign({
-        id: Date.now(),
-        emoji: getRandomEmoji()
-      }, getRandomPosition());
-      setEmojis(prevEmojis => {
-        // Keep a maximum of 100 emojis to prevent performance issues
-        const updatedEmojis = [...prevEmojis, newEmoji];
-        return updatedEmojis.slice(-40);
-      });
-    };
-    const interval = setInterval(generateNewEmoji, 50);
-    const timeout = setTimeout(() => clearInterval(interval), 5000); // Stop after 5 seconds
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
-  }, []);
-  return /*#__PURE__*/React__default.createElement("div", {
-    className: "fixed inset-0 pointer-events-none z-50 overflow-hidden"
-  }, /*#__PURE__*/React__default.createElement(AnimatePresence, null, emojis.map(emojiObj => /*#__PURE__*/React__default.createElement(motion.div, {
-    key: emojiObj.id,
-    initial: {
-      y: -100,
-      x: emojiObj.x,
-      opacity: 1
-    },
-    animate: {
-      y: window.innerHeight + 100,
-      opacity: [1, 1, 0],
-      x: emojiObj.x + (Math.random() * 100 - 50)
-    },
-    exit: {
-      opacity: 0
-    },
-    transition: {
-      duration: emojiObj.duration,
-      delay: emojiObj.delay,
-      ease: "easeInOut"
-    },
-    className: "absolute select-none text-4xl",
-    style: {
-      left: emojiObj.x
-    }
-  }, emojiObj.emoji))));
-};
-
-var navigation$1 = {exports: {}};
-
-var appRouterContext_sharedRuntime = {};
-
-var _interop_require_default = {};
-
-var hasRequired_interop_require_default;
-
-function require_interop_require_default () {
-	if (hasRequired_interop_require_default) return _interop_require_default;
-	hasRequired_interop_require_default = 1;
-
-	function _interop_require_default$1(obj) {
-	    return obj && obj.__esModule ? obj : { default: obj };
-	}
-	_interop_require_default._ = _interop_require_default$1;
-	return _interop_require_default;
-}
-
-var hasRequiredAppRouterContext_sharedRuntime;
-function requireAppRouterContext_sharedRuntime() {
-  if (hasRequiredAppRouterContext_sharedRuntime) return appRouterContext_sharedRuntime;
-  hasRequiredAppRouterContext_sharedRuntime = 1;
-  (function (exports) {
-    "use client";
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      AppRouterContext: function () {
-        return AppRouterContext;
-      },
-      GlobalLayoutRouterContext: function () {
-        return GlobalLayoutRouterContext;
-      },
-      LayoutRouterContext: function () {
-        return LayoutRouterContext;
-      },
-      MissingSlotContext: function () {
-        return MissingSlotContext;
-      },
-      TemplateContext: function () {
-        return TemplateContext;
-      }
-    });
-    const _interop_require_default = /*@__PURE__*/require_interop_require_default();
-    const _react = /*#__PURE__*/_interop_require_default._(React__default);
-    const AppRouterContext = _react.default.createContext(null);
-    const LayoutRouterContext = _react.default.createContext(null);
-    const GlobalLayoutRouterContext = _react.default.createContext(null);
-    const TemplateContext = _react.default.createContext(null);
-    if (process.env.NODE_ENV !== 'production') {
-      AppRouterContext.displayName = 'AppRouterContext';
-      LayoutRouterContext.displayName = 'LayoutRouterContext';
-      GlobalLayoutRouterContext.displayName = 'GlobalLayoutRouterContext';
-      TemplateContext.displayName = 'TemplateContext';
-    }
-    const MissingSlotContext = _react.default.createContext(new Set());
-  })(appRouterContext_sharedRuntime);
-  return appRouterContext_sharedRuntime;
-}
-
-var hooksClientContext_sharedRuntime = {};
-
-var hasRequiredHooksClientContext_sharedRuntime;
-function requireHooksClientContext_sharedRuntime() {
-  if (hasRequiredHooksClientContext_sharedRuntime) return hooksClientContext_sharedRuntime;
-  hasRequiredHooksClientContext_sharedRuntime = 1;
-  (function (exports) {
-    "use client";
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      PathParamsContext: function () {
-        return PathParamsContext;
-      },
-      PathnameContext: function () {
-        return PathnameContext;
-      },
-      SearchParamsContext: function () {
-        return SearchParamsContext;
-      }
-    });
-    const _react = React__default;
-    const SearchParamsContext = (0, _react.createContext)(null);
-    const PathnameContext = (0, _react.createContext)(null);
-    const PathParamsContext = (0, _react.createContext)(null);
-    if (process.env.NODE_ENV !== 'production') {
-      SearchParamsContext.displayName = 'SearchParamsContext';
-      PathnameContext.displayName = 'PathnameContext';
-      PathParamsContext.displayName = 'PathParamsContext';
-    }
-  })(hooksClientContext_sharedRuntime);
-  return hooksClientContext_sharedRuntime;
-}
-
-var getSegmentValue = {exports: {}};
-
-var hasRequiredGetSegmentValue;
-function requireGetSegmentValue() {
-  if (hasRequiredGetSegmentValue) return getSegmentValue.exports;
-  hasRequiredGetSegmentValue = 1;
-  (function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    Object.defineProperty(exports, "getSegmentValue", {
-      enumerable: true,
-      get: function () {
-        return getSegmentValue;
-      }
-    });
-    function getSegmentValue(segment) {
-      return Array.isArray(segment) ? segment[1] : segment;
-    }
-    if ((typeof exports.default === 'function' || typeof exports.default === 'object' && exports.default !== null) && typeof exports.default.__esModule === 'undefined') {
-      Object.defineProperty(exports.default, '__esModule', {
-        value: true
-      });
-      Object.assign(exports.default, exports);
-      module.exports = exports.default;
-    }
-  })(getSegmentValue, getSegmentValue.exports);
-  return getSegmentValue.exports;
-}
-
-var segment = {};
-
-var hasRequiredSegment;
-function requireSegment() {
-  if (hasRequiredSegment) return segment;
-  hasRequiredSegment = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      DEFAULT_SEGMENT_KEY: function () {
-        return DEFAULT_SEGMENT_KEY;
-      },
-      PAGE_SEGMENT_KEY: function () {
-        return PAGE_SEGMENT_KEY;
-      },
-      addSearchParamsIfPageSegment: function () {
-        return addSearchParamsIfPageSegment;
-      },
-      isGroupSegment: function () {
-        return isGroupSegment;
-      }
-    });
-    function isGroupSegment(segment) {
-      // Use array[0] for performant purpose
-      return segment[0] === '(' && segment.endsWith(')');
-    }
-    function addSearchParamsIfPageSegment(segment, searchParams) {
-      const isPageSegment = segment.includes(PAGE_SEGMENT_KEY);
-      if (isPageSegment) {
-        const stringifiedQuery = JSON.stringify(searchParams);
-        return stringifiedQuery !== '{}' ? PAGE_SEGMENT_KEY + '?' + stringifiedQuery : PAGE_SEGMENT_KEY;
-      }
-      return segment;
-    }
-    const PAGE_SEGMENT_KEY = '__PAGE__';
-    const DEFAULT_SEGMENT_KEY = '__DEFAULT__';
-  })(segment);
-  return segment;
-}
-
-var navigation_reactServer = {exports: {}};
-
-var redirect = {exports: {}};
-
-var actionAsyncStorage_external = {};
-
-var actionAsyncStorageInstance = {};
-
-var asyncLocalStorage = {};
-
-var hasRequiredAsyncLocalStorage;
-function requireAsyncLocalStorage() {
-  if (hasRequiredAsyncLocalStorage) return asyncLocalStorage;
-  hasRequiredAsyncLocalStorage = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      bindSnapshot: function () {
-        return bindSnapshot;
-      },
-      createAsyncLocalStorage: function () {
-        return createAsyncLocalStorage;
-      },
-      createSnapshot: function () {
-        return createSnapshot;
-      }
-    });
-    const sharedAsyncLocalStorageNotAvailableError = new Error('Invariant: AsyncLocalStorage accessed in runtime where it is not available');
-    class FakeAsyncLocalStorage {
-      disable() {
-        throw sharedAsyncLocalStorageNotAvailableError;
-      }
-      getStore() {
-        // This fake implementation of AsyncLocalStorage always returns `undefined`.
-        return undefined;
-      }
-      run() {
-        throw sharedAsyncLocalStorageNotAvailableError;
-      }
-      exit() {
-        throw sharedAsyncLocalStorageNotAvailableError;
-      }
-      enterWith() {
-        throw sharedAsyncLocalStorageNotAvailableError;
-      }
-      static bind(fn) {
-        return fn;
-      }
-    }
-    const maybeGlobalAsyncLocalStorage = typeof globalThis !== 'undefined' && globalThis.AsyncLocalStorage;
-    function createAsyncLocalStorage() {
-      if (maybeGlobalAsyncLocalStorage) {
-        return new maybeGlobalAsyncLocalStorage();
-      }
-      return new FakeAsyncLocalStorage();
-    }
-    function bindSnapshot(fn) {
-      if (maybeGlobalAsyncLocalStorage) {
-        return maybeGlobalAsyncLocalStorage.bind(fn);
-      }
-      return FakeAsyncLocalStorage.bind(fn);
-    }
-    function createSnapshot() {
-      if (maybeGlobalAsyncLocalStorage) {
-        return maybeGlobalAsyncLocalStorage.snapshot();
-      }
-      return function (fn, ...args) {
-        return fn(...args);
-      };
-    }
-  })(asyncLocalStorage);
-  return asyncLocalStorage;
-}
-
-var hasRequiredActionAsyncStorageInstance;
-function requireActionAsyncStorageInstance() {
-  if (hasRequiredActionAsyncStorageInstance) return actionAsyncStorageInstance;
-  hasRequiredActionAsyncStorageInstance = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    Object.defineProperty(exports, "actionAsyncStorage", {
-      enumerable: true,
-      get: function () {
-        return actionAsyncStorage;
-      }
-    });
-    const _asynclocalstorage = requireAsyncLocalStorage();
-    const actionAsyncStorage = (0, _asynclocalstorage.createAsyncLocalStorage)();
-  })(actionAsyncStorageInstance);
-  return actionAsyncStorageInstance;
-}
-
-var hasRequiredActionAsyncStorage_external;
-function requireActionAsyncStorage_external() {
-  if (hasRequiredActionAsyncStorage_external) return actionAsyncStorage_external;
-  hasRequiredActionAsyncStorage_external = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    Object.defineProperty(exports, "actionAsyncStorage", {
-      enumerable: true,
-      get: function () {
-        return _actionasyncstorageinstance.actionAsyncStorage;
-      }
-    });
-    const _actionasyncstorageinstance = requireActionAsyncStorageInstance();
-  })(actionAsyncStorage_external);
-  return actionAsyncStorage_external;
-}
-
-var redirectStatusCode = {exports: {}};
-
-var hasRequiredRedirectStatusCode;
-function requireRedirectStatusCode() {
-  if (hasRequiredRedirectStatusCode) return redirectStatusCode.exports;
-  hasRequiredRedirectStatusCode = 1;
-  (function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    Object.defineProperty(exports, "RedirectStatusCode", {
-      enumerable: true,
-      get: function () {
-        return RedirectStatusCode;
-      }
-    });
-    var RedirectStatusCode;
-    (function (RedirectStatusCode) {
-      RedirectStatusCode[RedirectStatusCode["SeeOther"] = 303] = "SeeOther";
-      RedirectStatusCode[RedirectStatusCode["TemporaryRedirect"] = 307] = "TemporaryRedirect";
-      RedirectStatusCode[RedirectStatusCode["PermanentRedirect"] = 308] = "PermanentRedirect";
-    })(RedirectStatusCode || (RedirectStatusCode = {}));
-    if ((typeof exports.default === 'function' || typeof exports.default === 'object' && exports.default !== null) && typeof exports.default.__esModule === 'undefined') {
-      Object.defineProperty(exports.default, '__esModule', {
-        value: true
-      });
-      Object.assign(exports.default, exports);
-      module.exports = exports.default;
-    }
-  })(redirectStatusCode, redirectStatusCode.exports);
-  return redirectStatusCode.exports;
-}
-
-var hasRequiredRedirect;
-function requireRedirect() {
-  if (hasRequiredRedirect) return redirect.exports;
-  hasRequiredRedirect = 1;
-  (function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      RedirectType: function () {
-        return RedirectType;
-      },
-      getRedirectError: function () {
-        return getRedirectError;
-      },
-      getRedirectStatusCodeFromError: function () {
-        return getRedirectStatusCodeFromError;
-      },
-      getRedirectTypeFromError: function () {
-        return getRedirectTypeFromError;
-      },
-      getURLFromRedirectError: function () {
-        return getURLFromRedirectError;
-      },
-      isRedirectError: function () {
-        return isRedirectError;
-      },
-      permanentRedirect: function () {
-        return permanentRedirect;
-      },
-      redirect: function () {
-        return redirect;
-      }
-    });
-    const _actionasyncstorageexternal = requireActionAsyncStorage_external();
-    const _redirectstatuscode = requireRedirectStatusCode();
-    const REDIRECT_ERROR_CODE = 'NEXT_REDIRECT';
-    var RedirectType;
-    (function (RedirectType) {
-      RedirectType["push"] = "push";
-      RedirectType["replace"] = "replace";
-    })(RedirectType || (RedirectType = {}));
-    function getRedirectError(url, type, statusCode) {
-      if (statusCode === void 0) statusCode = _redirectstatuscode.RedirectStatusCode.TemporaryRedirect;
-      const error = new Error(REDIRECT_ERROR_CODE);
-      error.digest = REDIRECT_ERROR_CODE + ";" + type + ";" + url + ";" + statusCode + ";";
-      return error;
-    }
-    function redirect(/** The URL to redirect to */url, type) {
-      const actionStore = _actionasyncstorageexternal.actionAsyncStorage.getStore();
-      const redirectType = type || ((actionStore == null ? void 0 : actionStore.isAction) ? "push" : "replace");
-      throw getRedirectError(url, redirectType, _redirectstatuscode.RedirectStatusCode.TemporaryRedirect);
-    }
-    function permanentRedirect(/** The URL to redirect to */url, type) {
-      if (type === void 0) type = "replace";
-      throw getRedirectError(url, type, _redirectstatuscode.RedirectStatusCode.PermanentRedirect);
-    }
-    function isRedirectError(error) {
-      if (typeof error !== 'object' || error === null || !('digest' in error) || typeof error.digest !== 'string') {
-        return false;
-      }
-      const digest = error.digest.split(';');
-      const [errorCode, type] = digest;
-      const destination = digest.slice(2, -2).join(';');
-      const status = digest.at(-2);
-      const statusCode = Number(status);
-      return errorCode === REDIRECT_ERROR_CODE && (type === 'replace' || type === 'push') && typeof destination === 'string' && !isNaN(statusCode) && statusCode in _redirectstatuscode.RedirectStatusCode;
-    }
-    function getURLFromRedirectError(error) {
-      if (!isRedirectError(error)) return null;
-      // Slices off the beginning of the digest that contains the code and the
-      // separating ';'.
-      return error.digest.split(';').slice(2, -2).join(';');
-    }
-    function getRedirectTypeFromError(error) {
-      if (!isRedirectError(error)) {
-        throw new Error('Not a redirect error');
-      }
-      return error.digest.split(';', 2)[1];
-    }
-    function getRedirectStatusCodeFromError(error) {
-      if (!isRedirectError(error)) {
-        throw new Error('Not a redirect error');
-      }
-      return Number(error.digest.split(';').at(-2));
-    }
-    if ((typeof exports.default === 'function' || typeof exports.default === 'object' && exports.default !== null) && typeof exports.default.__esModule === 'undefined') {
-      Object.defineProperty(exports.default, '__esModule', {
-        value: true
-      });
-      Object.assign(exports.default, exports);
-      module.exports = exports.default;
-    }
-  })(redirect, redirect.exports);
-  return redirect.exports;
-}
-
-var notFound = {exports: {}};
-
-var hasRequiredNotFound;
-function requireNotFound() {
-  if (hasRequiredNotFound) return notFound.exports;
-  hasRequiredNotFound = 1;
-  (function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      isNotFoundError: function () {
-        return isNotFoundError;
-      },
-      notFound: function () {
-        return notFound;
-      }
-    });
-    const NOT_FOUND_ERROR_CODE = 'NEXT_NOT_FOUND';
-    function notFound() {
-      // eslint-disable-next-line no-throw-literal
-      const error = new Error(NOT_FOUND_ERROR_CODE);
-      error.digest = NOT_FOUND_ERROR_CODE;
-      throw error;
-    }
-    function isNotFoundError(error) {
-      if (typeof error !== 'object' || error === null || !('digest' in error)) {
-        return false;
-      }
-      return error.digest === NOT_FOUND_ERROR_CODE;
-    }
-    if ((typeof exports.default === 'function' || typeof exports.default === 'object' && exports.default !== null) && typeof exports.default.__esModule === 'undefined') {
-      Object.defineProperty(exports.default, '__esModule', {
-        value: true
-      });
-      Object.assign(exports.default, exports);
-      module.exports = exports.default;
-    }
-  })(notFound, notFound.exports);
-  return notFound.exports;
-}
-
-var unstableRethrow = {exports: {}};
-
-var isDynamicUsageError = {};
-
-var hooksServerContext = {exports: {}};
-
-var hasRequiredHooksServerContext;
-function requireHooksServerContext() {
-  if (hasRequiredHooksServerContext) return hooksServerContext.exports;
-  hasRequiredHooksServerContext = 1;
-  (function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      DynamicServerError: function () {
-        return DynamicServerError;
-      },
-      isDynamicServerError: function () {
-        return isDynamicServerError;
-      }
-    });
-    const DYNAMIC_ERROR_CODE = 'DYNAMIC_SERVER_USAGE';
-    class DynamicServerError extends Error {
-      constructor(description) {
-        super("Dynamic server usage: " + description);
-        this.description = description;
-        this.digest = DYNAMIC_ERROR_CODE;
-      }
-    }
-    function isDynamicServerError(err) {
-      if (typeof err !== 'object' || err === null || !('digest' in err) || typeof err.digest !== 'string') {
-        return false;
-      }
-      return err.digest === DYNAMIC_ERROR_CODE;
-    }
-    if ((typeof exports.default === 'function' || typeof exports.default === 'object' && exports.default !== null) && typeof exports.default.__esModule === 'undefined') {
-      Object.defineProperty(exports.default, '__esModule', {
-        value: true
-      });
-      Object.assign(exports.default, exports);
-      module.exports = exports.default;
-    }
-  })(hooksServerContext, hooksServerContext.exports);
-  return hooksServerContext.exports;
-}
-
-var bailoutToCsr = {};
-
-var hasRequiredBailoutToCsr;
-function requireBailoutToCsr() {
-  if (hasRequiredBailoutToCsr) return bailoutToCsr;
-  hasRequiredBailoutToCsr = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      BailoutToCSRError: function () {
-        return BailoutToCSRError;
-      },
-      isBailoutToCSRError: function () {
-        return isBailoutToCSRError;
-      }
-    });
-    const BAILOUT_TO_CSR = 'BAILOUT_TO_CLIENT_SIDE_RENDERING';
-    class BailoutToCSRError extends Error {
-      constructor(reason) {
-        super("Bail out to client-side rendering: " + reason);
-        this.reason = reason;
-        this.digest = BAILOUT_TO_CSR;
-      }
-    }
-    function isBailoutToCSRError(err) {
-      if (typeof err !== 'object' || err === null || !('digest' in err)) {
-        return false;
-      }
-      return err.digest === BAILOUT_TO_CSR;
-    }
-  })(bailoutToCsr);
-  return bailoutToCsr;
-}
-
-var isNextRouterError = {exports: {}};
-
-var hasRequiredIsNextRouterError;
-function requireIsNextRouterError() {
-  if (hasRequiredIsNextRouterError) return isNextRouterError.exports;
-  hasRequiredIsNextRouterError = 1;
-  (function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    Object.defineProperty(exports, "isNextRouterError", {
-      enumerable: true,
-      get: function () {
-        return isNextRouterError;
-      }
-    });
-    const _notfound = requireNotFound();
-    const _redirect = requireRedirect();
-    function isNextRouterError(error) {
-      return (0, _redirect.isRedirectError)(error) || (0, _notfound.isNotFoundError)(error);
-    }
-    if ((typeof exports.default === 'function' || typeof exports.default === 'object' && exports.default !== null) && typeof exports.default.__esModule === 'undefined') {
-      Object.defineProperty(exports.default, '__esModule', {
-        value: true
-      });
-      Object.assign(exports.default, exports);
-      module.exports = exports.default;
-    }
-  })(isNextRouterError, isNextRouterError.exports);
-  return isNextRouterError.exports;
-}
-
-var dynamicRendering = {};
-
-var staticGenerationBailout = {exports: {}};
-
-var hasRequiredStaticGenerationBailout;
-function requireStaticGenerationBailout() {
-  if (hasRequiredStaticGenerationBailout) return staticGenerationBailout.exports;
-  hasRequiredStaticGenerationBailout = 1;
-  (function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      StaticGenBailoutError: function () {
-        return StaticGenBailoutError;
-      },
-      isStaticGenBailoutError: function () {
-        return isStaticGenBailoutError;
-      }
-    });
-    const NEXT_STATIC_GEN_BAILOUT = 'NEXT_STATIC_GEN_BAILOUT';
-    class StaticGenBailoutError extends Error {
-      constructor(...args) {
-        super(...args);
-        this.code = NEXT_STATIC_GEN_BAILOUT;
-      }
-    }
-    function isStaticGenBailoutError(error) {
-      if (typeof error !== 'object' || error === null || !('code' in error)) {
-        return false;
-      }
-      return error.code === NEXT_STATIC_GEN_BAILOUT;
-    }
-    if ((typeof exports.default === 'function' || typeof exports.default === 'object' && exports.default !== null) && typeof exports.default.__esModule === 'undefined') {
-      Object.defineProperty(exports.default, '__esModule', {
-        value: true
-      });
-      Object.assign(exports.default, exports);
-      module.exports = exports.default;
-    }
-  })(staticGenerationBailout, staticGenerationBailout.exports);
-  return staticGenerationBailout.exports;
-}
-
-var workUnitAsyncStorage_external = {};
-
-var workUnitAsyncStorageInstance = {};
-
-var hasRequiredWorkUnitAsyncStorageInstance;
-function requireWorkUnitAsyncStorageInstance() {
-  if (hasRequiredWorkUnitAsyncStorageInstance) return workUnitAsyncStorageInstance;
-  hasRequiredWorkUnitAsyncStorageInstance = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    Object.defineProperty(exports, "workUnitAsyncStorage", {
-      enumerable: true,
-      get: function () {
-        return workUnitAsyncStorage;
-      }
-    });
-    const _asynclocalstorage = requireAsyncLocalStorage();
-    const workUnitAsyncStorage = (0, _asynclocalstorage.createAsyncLocalStorage)();
-  })(workUnitAsyncStorageInstance);
-  return workUnitAsyncStorageInstance;
-}
-
-var hasRequiredWorkUnitAsyncStorage_external;
-function requireWorkUnitAsyncStorage_external() {
-  if (hasRequiredWorkUnitAsyncStorage_external) return workUnitAsyncStorage_external;
-  hasRequiredWorkUnitAsyncStorage_external = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      getExpectedRequestStore: function () {
-        return getExpectedRequestStore;
-      },
-      getPrerenderResumeDataCache: function () {
-        return getPrerenderResumeDataCache;
-      },
-      getRenderResumeDataCache: function () {
-        return getRenderResumeDataCache;
-      },
-      workUnitAsyncStorage: function () {
-        return _workunitasyncstorageinstance.workUnitAsyncStorage;
-      }
-    });
-    const _workunitasyncstorageinstance = requireWorkUnitAsyncStorageInstance();
-    function getExpectedRequestStore(callingExpression) {
-      const workUnitStore = _workunitasyncstorageinstance.workUnitAsyncStorage.getStore();
-      if (workUnitStore) {
-        if (workUnitStore.type === 'request') {
-          return workUnitStore;
-        }
-        if (workUnitStore.type === 'prerender' || workUnitStore.type === 'prerender-ppr' || workUnitStore.type === 'prerender-legacy') {
-          // This should not happen because we should have checked it already.
-          throw new Error(`\`${callingExpression}\` cannot be called inside a prerender. This is a bug in Next.js.`);
-        }
-        if (workUnitStore.type === 'cache') {
-          throw new Error(`\`${callingExpression}\` cannot be called inside "use cache". Call it outside and pass an argument instead. Read more: https://nextjs.org/docs/messages/next-request-in-use-cache`);
-        } else if (workUnitStore.type === 'unstable-cache') {
-          throw new Error(`\`${callingExpression}\` cannot be called inside unstable_cache. Call it outside and pass an argument instead. Read more: https://nextjs.org/docs/app/api-reference/functions/unstable_cache`);
-        }
-      }
-      throw new Error(`\`${callingExpression}\` was called outside a request scope. Read more: https://nextjs.org/docs/messages/next-dynamic-api-wrong-context`);
-    }
-    function getPrerenderResumeDataCache(workUnitStore) {
-      if (workUnitStore.type !== 'prerender-legacy' && workUnitStore.type !== 'cache' && workUnitStore.type !== 'unstable-cache') {
-        if (workUnitStore.type === 'request') {
-          return workUnitStore.devWarmupPrerenderResumeDataCache;
-        }
-        return workUnitStore.prerenderResumeDataCache;
-      }
-      return null;
-    }
-    function getRenderResumeDataCache(workUnitStore) {
-      if (workUnitStore.type !== 'prerender-legacy' && workUnitStore.type !== 'cache' && workUnitStore.type !== 'unstable-cache') {
-        if (workUnitStore.type === 'request') {
-          return workUnitStore.renderResumeDataCache;
-        }
-        // We return the mutable resume data cache here as an immutable version of
-        // the cache as it can also be used for reading.
-        return workUnitStore.prerenderResumeDataCache;
-      }
-      return null;
-    }
-  })(workUnitAsyncStorage_external);
-  return workUnitAsyncStorage_external;
-}
-
-var workAsyncStorage_external = {};
-
-var workAsyncStorageInstance = {};
-
-var hasRequiredWorkAsyncStorageInstance;
-function requireWorkAsyncStorageInstance() {
-  if (hasRequiredWorkAsyncStorageInstance) return workAsyncStorageInstance;
-  hasRequiredWorkAsyncStorageInstance = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    Object.defineProperty(exports, "workAsyncStorage", {
-      enumerable: true,
-      get: function () {
-        return workAsyncStorage;
-      }
-    });
-    const _asynclocalstorage = requireAsyncLocalStorage();
-    const workAsyncStorage = (0, _asynclocalstorage.createAsyncLocalStorage)();
-  })(workAsyncStorageInstance);
-  return workAsyncStorageInstance;
-}
-
-var hasRequiredWorkAsyncStorage_external;
-function requireWorkAsyncStorage_external() {
-  if (hasRequiredWorkAsyncStorage_external) return workAsyncStorage_external;
-  hasRequiredWorkAsyncStorage_external = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    Object.defineProperty(exports, "workAsyncStorage", {
-      enumerable: true,
-      get: function () {
-        return _workasyncstorageinstance.workAsyncStorage;
-      }
-    });
-    const _workasyncstorageinstance = requireWorkAsyncStorageInstance();
-  })(workAsyncStorage_external);
-  return workAsyncStorage_external;
-}
-
-var dynamicRenderingUtils = {};
-
-/**
- * This function constructs a promise that will never resolve. This is primarily
- * useful for dynamicIO where we use promise resolution timing to determine which
- * parts of a render can be included in a prerender.
- *
- * @internal
- */
-var hasRequiredDynamicRenderingUtils;
-function requireDynamicRenderingUtils() {
-  if (hasRequiredDynamicRenderingUtils) return dynamicRenderingUtils;
-  hasRequiredDynamicRenderingUtils = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    Object.defineProperty(exports, "makeHangingPromise", {
-      enumerable: true,
-      get: function () {
-        return makeHangingPromise;
-      }
-    });
-    function makeHangingPromise(signal, expression) {
-      const hangingPromise = new Promise((_, reject) => {
-        signal.addEventListener('abort', () => {
-          reject(new Error(`During prerendering, ${expression} rejects when the prerender is complete. Typically these errors are handled by React but if you move ${expression} to a different context by using \`setTimeout\`, \`unstable_after\`, or similar functions you may observe this error and you should handle it in that context.`));
-        }, {
-          once: true
-        });
-      });
-      // We are fine if no one actually awaits this promise. We shouldn't consider this an unhandled rejection so
-      // we attach a noop catch handler here to suppress this warning. If you actually await somewhere or construct
-      // your own promise out of it you'll need to ensure you handle the error when it rejects.
-      hangingPromise.catch(ignoreReject);
-      return hangingPromise;
-    }
-    function ignoreReject() {}
-  })(dynamicRenderingUtils);
-  return dynamicRenderingUtils;
-}
-
-var metadataConstants = {};
-
-var hasRequiredMetadataConstants;
-function requireMetadataConstants() {
-  if (hasRequiredMetadataConstants) return metadataConstants;
-  hasRequiredMetadataConstants = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      METADATA_BOUNDARY_NAME: function () {
-        return METADATA_BOUNDARY_NAME;
-      },
-      OUTLET_BOUNDARY_NAME: function () {
-        return OUTLET_BOUNDARY_NAME;
-      },
-      VIEWPORT_BOUNDARY_NAME: function () {
-        return VIEWPORT_BOUNDARY_NAME;
-      }
-    });
-    const METADATA_BOUNDARY_NAME = '__next_metadata_boundary__';
-    const VIEWPORT_BOUNDARY_NAME = '__next_viewport_boundary__';
-    const OUTLET_BOUNDARY_NAME = '__next_outlet_boundary__';
-  })(metadataConstants);
-  return metadataConstants;
-}
-
-/**
- * The functions provided by this module are used to communicate certain properties
- * about the currently running code so that Next.js can make decisions on how to handle
- * the current execution in different rendering modes such as pre-rendering, resuming, and SSR.
- *
- * Today Next.js treats all code as potentially static. Certain APIs may only make sense when dynamically rendering.
- * Traditionally this meant deopting the entire render to dynamic however with PPR we can now deopt parts
- * of a React tree as dynamic while still keeping other parts static. There are really two different kinds of
- * Dynamic indications.
- *
- * The first is simply an intention to be dynamic. unstable_noStore is an example of this where
- * the currently executing code simply declares that the current scope is dynamic but if you use it
- * inside unstable_cache it can still be cached. This type of indication can be removed if we ever
- * make the default dynamic to begin with because the only way you would ever be static is inside
- * a cache scope which this indication does not affect.
- *
- * The second is an indication that a dynamic data source was read. This is a stronger form of dynamic
- * because it means that it is inappropriate to cache this at all. using a dynamic data source inside
- * unstable_cache should error. If you want to use some dynamic data inside unstable_cache you should
- * read that data outside the cache and pass it in as an argument to the cached function.
- */
-var hasRequiredDynamicRendering;
-function requireDynamicRendering() {
-  if (hasRequiredDynamicRendering) return dynamicRendering;
-  hasRequiredDynamicRendering = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      Postpone: function () {
-        return Postpone;
-      },
-      abortAndThrowOnSynchronousRequestDataAccess: function () {
-        return abortAndThrowOnSynchronousRequestDataAccess;
-      },
-      abortOnSynchronousPlatformIOAccess: function () {
-        return abortOnSynchronousPlatformIOAccess;
-      },
-      accessedDynamicData: function () {
-        return accessedDynamicData;
-      },
-      annotateDynamicAccess: function () {
-        return annotateDynamicAccess;
-      },
-      consumeDynamicAccess: function () {
-        return consumeDynamicAccess;
-      },
-      createDynamicTrackingState: function () {
-        return createDynamicTrackingState;
-      },
-      createDynamicValidationState: function () {
-        return createDynamicValidationState;
-      },
-      createPostponedAbortSignal: function () {
-        return createPostponedAbortSignal;
-      },
-      formatDynamicAPIAccesses: function () {
-        return formatDynamicAPIAccesses;
-      },
-      getFirstDynamicReason: function () {
-        return getFirstDynamicReason;
-      },
-      isDynamicPostpone: function () {
-        return isDynamicPostpone;
-      },
-      isPrerenderInterruptedError: function () {
-        return isPrerenderInterruptedError;
-      },
-      markCurrentScopeAsDynamic: function () {
-        return markCurrentScopeAsDynamic;
-      },
-      postponeWithTracking: function () {
-        return postponeWithTracking;
-      },
-      throwIfDisallowedDynamic: function () {
-        return throwIfDisallowedDynamic;
-      },
-      throwToInterruptStaticGeneration: function () {
-        return throwToInterruptStaticGeneration;
-      },
-      trackAllowedDynamicAccess: function () {
-        return trackAllowedDynamicAccess;
-      },
-      trackDynamicDataInDynamicRender: function () {
-        return trackDynamicDataInDynamicRender;
-      },
-      trackFallbackParamAccessed: function () {
-        return trackFallbackParamAccessed;
-      },
-      trackSynchronousPlatformIOAccessInDev: function () {
-        return trackSynchronousPlatformIOAccessInDev;
-      },
-      trackSynchronousRequestDataAccessInDev: function () {
-        return trackSynchronousRequestDataAccessInDev;
-      },
-      useDynamicRouteParams: function () {
-        return useDynamicRouteParams;
-      }
-    });
-    const _react = /*#__PURE__*/_interop_require_default(React__default);
-    const _hooksservercontext = requireHooksServerContext();
-    const _staticgenerationbailout = requireStaticGenerationBailout();
-    const _workunitasyncstorageexternal = requireWorkUnitAsyncStorage_external();
-    const _workasyncstorageexternal = requireWorkAsyncStorage_external();
-    const _dynamicrenderingutils = requireDynamicRenderingUtils();
-    const _metadataconstants = requireMetadataConstants();
-    function _interop_require_default(obj) {
-      return obj && obj.__esModule ? obj : {
-        default: obj
-      };
-    }
-    const hasPostpone = typeof _react.default.unstable_postpone === 'function';
-    function createDynamicTrackingState(isDebugDynamicAccesses) {
-      return {
-        isDebugDynamicAccesses,
-        dynamicAccesses: [],
-        syncDynamicExpression: undefined,
-        syncDynamicErrorWithStack: null
-      };
-    }
-    function createDynamicValidationState() {
-      return {
-        hasSuspendedDynamic: false,
-        hasDynamicMetadata: false,
-        hasDynamicViewport: false,
-        hasSyncDynamicErrors: false,
-        dynamicErrors: []
-      };
-    }
-    function getFirstDynamicReason(trackingState) {
-      var _trackingState_dynamicAccesses_;
-      return (_trackingState_dynamicAccesses_ = trackingState.dynamicAccesses[0]) == null ? void 0 : _trackingState_dynamicAccesses_.expression;
-    }
-    function markCurrentScopeAsDynamic(store, workUnitStore, expression) {
-      if (workUnitStore) {
-        if (workUnitStore.type === 'cache' || workUnitStore.type === 'unstable-cache') {
-          // inside cache scopes marking a scope as dynamic has no effect because the outer cache scope
-          // creates a cache boundary. This is subtly different from reading a dynamic data source which is
-          // forbidden inside a cache scope.
-          return;
-        }
-      }
-      // If we're forcing dynamic rendering or we're forcing static rendering, we
-      // don't need to do anything here because the entire page is already dynamic
-      // or it's static and it should not throw or postpone here.
-      if (store.forceDynamic || store.forceStatic) return;
-      if (store.dynamicShouldError) {
-        throw new _staticgenerationbailout.StaticGenBailoutError(`Route ${store.route} with \`dynamic = "error"\` couldn't be rendered statically because it used \`${expression}\`. See more info here: https://nextjs.org/docs/app/building-your-application/rendering/static-and-dynamic#dynamic-rendering`);
-      }
-      if (workUnitStore) {
-        if (workUnitStore.type === 'prerender-ppr') {
-          postponeWithTracking(store.route, expression, workUnitStore.dynamicTracking);
-        } else if (workUnitStore.type === 'prerender-legacy') {
-          workUnitStore.revalidate = 0;
-          // We aren't prerendering but we are generating a static page. We need to bail out of static generation
-          const err = new _hooksservercontext.DynamicServerError(`Route ${store.route} couldn't be rendered statically because it used ${expression}. See more info here: https://nextjs.org/docs/messages/dynamic-server-error`);
-          store.dynamicUsageDescription = expression;
-          store.dynamicUsageStack = err.stack;
-          throw err;
-        } else if (process.env.NODE_ENV === 'development' && workUnitStore && workUnitStore.type === 'request') {
-          workUnitStore.usedDynamic = true;
-        }
-      }
-    }
-    function trackFallbackParamAccessed(store, expression) {
-      const prerenderStore = _workunitasyncstorageexternal.workUnitAsyncStorage.getStore();
-      if (!prerenderStore || prerenderStore.type !== 'prerender-ppr') return;
-      postponeWithTracking(store.route, expression, prerenderStore.dynamicTracking);
-    }
-    function throwToInterruptStaticGeneration(expression, store, prerenderStore) {
-      // We aren't prerendering but we are generating a static page. We need to bail out of static generation
-      const err = new _hooksservercontext.DynamicServerError(`Route ${store.route} couldn't be rendered statically because it used \`${expression}\`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error`);
-      prerenderStore.revalidate = 0;
-      store.dynamicUsageDescription = expression;
-      store.dynamicUsageStack = err.stack;
-      throw err;
-    }
-    function trackDynamicDataInDynamicRender(_store, workUnitStore) {
-      if (workUnitStore) {
-        if (workUnitStore.type === 'cache' || workUnitStore.type === 'unstable-cache') {
-          // inside cache scopes marking a scope as dynamic has no effect because the outer cache scope
-          // creates a cache boundary. This is subtly different from reading a dynamic data source which is
-          // forbidden inside a cache scope.
-          return;
-        }
-        if (workUnitStore.type === 'prerender' || workUnitStore.type === 'prerender-legacy') {
-          workUnitStore.revalidate = 0;
-        }
-        if (process.env.NODE_ENV === 'development' && workUnitStore.type === 'request') {
-          workUnitStore.usedDynamic = true;
-        }
-      }
-    }
-    // Despite it's name we don't actually abort unless we have a controller to call abort on
-    // There are times when we let a prerender run long to discover caches where we want the semantics
-    // of tracking dynamic access without terminating the prerender early
-    function abortOnSynchronousDynamicDataAccess(route, expression, prerenderStore) {
-      const reason = `Route ${route} needs to bail out of prerendering at this point because it used ${expression}.`;
-      const error = createPrerenderInterruptedError(reason);
-      prerenderStore.controller.abort(error);
-      const dynamicTracking = prerenderStore.dynamicTracking;
-      if (dynamicTracking) {
-        dynamicTracking.dynamicAccesses.push({
-          // When we aren't debugging, we don't need to create another error for the
-          // stack trace.
-          stack: dynamicTracking.isDebugDynamicAccesses ? new Error().stack : undefined,
-          expression
-        });
-      }
-    }
-    function abortOnSynchronousPlatformIOAccess(route, expression, errorWithStack, prerenderStore) {
-      const dynamicTracking = prerenderStore.dynamicTracking;
-      if (dynamicTracking) {
-        if (dynamicTracking.syncDynamicErrorWithStack === null) {
-          dynamicTracking.syncDynamicExpression = expression;
-          dynamicTracking.syncDynamicErrorWithStack = errorWithStack;
-        }
-      }
-      return abortOnSynchronousDynamicDataAccess(route, expression, prerenderStore);
-    }
-    function trackSynchronousPlatformIOAccessInDev(requestStore) {
-      // We don't actually have a controller to abort but we do the semantic equivalent by
-      // advancing the request store out of prerender mode
-      requestStore.prerenderPhase = false;
-    }
-    function abortAndThrowOnSynchronousRequestDataAccess(route, expression, errorWithStack, prerenderStore) {
-      const dynamicTracking = prerenderStore.dynamicTracking;
-      if (dynamicTracking) {
-        if (dynamicTracking.syncDynamicErrorWithStack === null) {
-          dynamicTracking.syncDynamicExpression = expression;
-          dynamicTracking.syncDynamicErrorWithStack = errorWithStack;
-          if (prerenderStore.validating === true) {
-            // We always log Request Access in dev at the point of calling the function
-            // So we mark the dynamic validation as not requiring it to be printed
-            dynamicTracking.syncDynamicLogged = true;
-          }
-        }
-      }
-      abortOnSynchronousDynamicDataAccess(route, expression, prerenderStore);
-      throw createPrerenderInterruptedError(`Route ${route} needs to bail out of prerendering at this point because it used ${expression}.`);
-    }
-    const trackSynchronousRequestDataAccessInDev = trackSynchronousPlatformIOAccessInDev;
-    function Postpone({
-      reason,
-      route
-    }) {
-      const prerenderStore = _workunitasyncstorageexternal.workUnitAsyncStorage.getStore();
-      const dynamicTracking = prerenderStore && prerenderStore.type === 'prerender-ppr' ? prerenderStore.dynamicTracking : null;
-      postponeWithTracking(route, reason, dynamicTracking);
-    }
-    function postponeWithTracking(route, expression, dynamicTracking) {
-      assertPostpone();
-      if (dynamicTracking) {
-        dynamicTracking.dynamicAccesses.push({
-          // When we aren't debugging, we don't need to create another error for the
-          // stack trace.
-          stack: dynamicTracking.isDebugDynamicAccesses ? new Error().stack : undefined,
-          expression
-        });
-      }
-      _react.default.unstable_postpone(createPostponeReason(route, expression));
-    }
-    function createPostponeReason(route, expression) {
-      return `Route ${route} needs to bail out of prerendering at this point because it used ${expression}. ` + `React throws this special object to indicate where. It should not be caught by ` + `your own try/catch. Learn more: https://nextjs.org/docs/messages/ppr-caught-error`;
-    }
-    function isDynamicPostpone(err) {
-      if (typeof err === 'object' && err !== null && typeof err.message === 'string') {
-        return isDynamicPostponeReason(err.message);
-      }
-      return false;
-    }
-    function isDynamicPostponeReason(reason) {
-      return reason.includes('needs to bail out of prerendering at this point because it used') && reason.includes('Learn more: https://nextjs.org/docs/messages/ppr-caught-error');
-    }
-    if (isDynamicPostponeReason(createPostponeReason('%%%', '^^^')) === false) {
-      throw new Error('Invariant: isDynamicPostpone misidentified a postpone reason. This is a bug in Next.js');
-    }
-    const NEXT_PRERENDER_INTERRUPTED = 'NEXT_PRERENDER_INTERRUPTED';
-    function createPrerenderInterruptedError(message) {
-      const error = new Error(message);
-      error.digest = NEXT_PRERENDER_INTERRUPTED;
-      return error;
-    }
-    function isPrerenderInterruptedError(error) {
-      return typeof error === 'object' && error !== null && error.digest === NEXT_PRERENDER_INTERRUPTED && 'name' in error && 'message' in error && error instanceof Error;
-    }
-    function accessedDynamicData(dynamicAccesses) {
-      return dynamicAccesses.length > 0;
-    }
-    function consumeDynamicAccess(serverDynamic, clientDynamic) {
-      // We mutate because we only call this once we are no longer writing
-      // to the dynamicTrackingState and it's more efficient than creating a new
-      // array.
-      serverDynamic.dynamicAccesses.push(...clientDynamic.dynamicAccesses);
-      return serverDynamic.dynamicAccesses;
-    }
-    function formatDynamicAPIAccesses(dynamicAccesses) {
-      return dynamicAccesses.filter(access => typeof access.stack === 'string' && access.stack.length > 0).map(({
-        expression,
-        stack
-      }) => {
-        stack = stack.split('\n') // Remove the "Error: " prefix from the first line of the stack trace as
-        // well as the first 4 lines of the stack trace which is the distance
-        // from the user code and the `new Error().stack` call.
-        .slice(4).filter(line => {
-          // Exclude Next.js internals from the stack trace.
-          if (line.includes('node_modules/next/')) {
-            return false;
-          }
-          // Exclude anonymous functions from the stack trace.
-          if (line.includes(' (<anonymous>)')) {
-            return false;
-          }
-          // Exclude Node.js internals from the stack trace.
-          if (line.includes(' (node:')) {
-            return false;
-          }
-          return true;
-        }).join('\n');
-        return `Dynamic API Usage Debug - ${expression}:\n${stack}`;
-      });
-    }
-    function assertPostpone() {
-      if (!hasPostpone) {
-        throw new Error(`Invariant: React.unstable_postpone is not defined. This suggests the wrong version of React was loaded. This is a bug in Next.js`);
-      }
-    }
-    function createPostponedAbortSignal(reason) {
-      assertPostpone();
-      const controller = new AbortController();
-      // We get our hands on a postpone instance by calling postpone and catching the throw
-      try {
-        _react.default.unstable_postpone(reason);
-      } catch (x) {
-        controller.abort(x);
-      }
-      return controller.signal;
-    }
-    function annotateDynamicAccess(expression, prerenderStore) {
-      const dynamicTracking = prerenderStore.dynamicTracking;
-      if (dynamicTracking) {
-        dynamicTracking.dynamicAccesses.push({
-          stack: dynamicTracking.isDebugDynamicAccesses ? new Error().stack : undefined,
-          expression
-        });
-      }
-    }
-    function useDynamicRouteParams(expression) {
-      if (typeof window === 'undefined') {
-        const workStore = _workasyncstorageexternal.workAsyncStorage.getStore();
-        if (workStore && workStore.isStaticGeneration && workStore.fallbackRouteParams && workStore.fallbackRouteParams.size > 0) {
-          // There are fallback route params, we should track these as dynamic
-          // accesses.
-          const workUnitStore = _workunitasyncstorageexternal.workUnitAsyncStorage.getStore();
-          if (workUnitStore) {
-            // We're prerendering with dynamicIO or PPR or both
-            if (workUnitStore.type === 'prerender') {
-              // We are in a prerender with dynamicIO semantics
-              // We are going to hang here and never resolve. This will cause the currently
-              // rendering component to effectively be a dynamic hole
-              _react.default.use((0, _dynamicrenderingutils.makeHangingPromise)(workUnitStore.renderSignal, expression));
-            } else if (workUnitStore.type === 'prerender-ppr') {
-              // We're prerendering with PPR
-              postponeWithTracking(workStore.route, expression, workUnitStore.dynamicTracking);
-            } else if (workUnitStore.type === 'prerender-legacy') {
-              throwToInterruptStaticGeneration(expression, workStore, workUnitStore);
-            }
-          }
-        }
-      }
-    }
-    const hasSuspenseRegex = /\n\s+at Suspense \(<anonymous>\)/;
-    const hasMetadataRegex = new RegExp(`\\n\\s+at ${_metadataconstants.METADATA_BOUNDARY_NAME}[\\n\\s]`);
-    const hasViewportRegex = new RegExp(`\\n\\s+at ${_metadataconstants.VIEWPORT_BOUNDARY_NAME}[\\n\\s]`);
-    const hasOutletRegex = new RegExp(`\\n\\s+at ${_metadataconstants.OUTLET_BOUNDARY_NAME}[\\n\\s]`);
-    function trackAllowedDynamicAccess(route, componentStack, dynamicValidation, serverDynamic, clientDynamic) {
-      if (hasOutletRegex.test(componentStack)) {
-        // We don't need to track that this is dynamic. It is only so when something else is also dynamic.
-        return;
-      } else if (hasMetadataRegex.test(componentStack)) {
-        dynamicValidation.hasDynamicMetadata = true;
-        return;
-      } else if (hasViewportRegex.test(componentStack)) {
-        dynamicValidation.hasDynamicViewport = true;
-        return;
-      } else if (hasSuspenseRegex.test(componentStack)) {
-        dynamicValidation.hasSuspendedDynamic = true;
-        return;
-      } else if (serverDynamic.syncDynamicErrorWithStack || clientDynamic.syncDynamicErrorWithStack) {
-        dynamicValidation.hasSyncDynamicErrors = true;
-        return;
-      } else {
-        const message = `Route "${route}": A component accessed data, headers, params, searchParams, or a short-lived cache without a Suspense boundary nor a "use cache" above it. We don't have the exact line number added to error messages yet but you can see which component in the stack below. See more info: https://nextjs.org/docs/messages/next-prerender-missing-suspense`;
-        const error = createErrorWithComponentStack(message, componentStack);
-        dynamicValidation.dynamicErrors.push(error);
-        return;
-      }
-    }
-    function createErrorWithComponentStack(message, componentStack) {
-      const error = new Error(message);
-      error.stack = 'Error: ' + message + componentStack;
-      return error;
-    }
-    function throwIfDisallowedDynamic(route, dynamicValidation, serverDynamic, clientDynamic) {
-      let syncError;
-      let syncExpression;
-      let syncLogged;
-      if (serverDynamic.syncDynamicErrorWithStack) {
-        syncError = serverDynamic.syncDynamicErrorWithStack;
-        syncExpression = serverDynamic.syncDynamicExpression;
-        syncLogged = serverDynamic.syncDynamicLogged === true;
-      } else if (clientDynamic.syncDynamicErrorWithStack) {
-        syncError = clientDynamic.syncDynamicErrorWithStack;
-        syncExpression = clientDynamic.syncDynamicExpression;
-        syncLogged = clientDynamic.syncDynamicLogged === true;
-      } else {
-        syncError = null;
-        syncExpression = undefined;
-        syncLogged = false;
-      }
-      if (dynamicValidation.hasSyncDynamicErrors && syncError) {
-        if (!syncLogged) {
-          // In dev we already log errors about sync dynamic access. But during builds we need to ensure
-          // the offending sync error is logged before we exit the build
-          console.error(syncError);
-        }
-        // The actual error should have been logged when the sync access ocurred
-        throw new _staticgenerationbailout.StaticGenBailoutError();
-      }
-      const dynamicErrors = dynamicValidation.dynamicErrors;
-      if (dynamicErrors.length) {
-        for (let i = 0; i < dynamicErrors.length; i++) {
-          console.error(dynamicErrors[i]);
-        }
-        throw new _staticgenerationbailout.StaticGenBailoutError();
-      }
-      if (!dynamicValidation.hasSuspendedDynamic) {
-        if (dynamicValidation.hasDynamicMetadata) {
-          if (syncError) {
-            console.error(syncError);
-            throw new _staticgenerationbailout.StaticGenBailoutError(`Route "${route}" has a \`generateMetadata\` that could not finish rendering before ${syncExpression} was used. Follow the instructions in the error for this expression to resolve.`);
-          }
-          throw new _staticgenerationbailout.StaticGenBailoutError(`Route "${route}" has a \`generateMetadata\` that depends on Request data (\`cookies()\`, etc...) or external data (\`fetch(...)\`, etc...) but the rest of the route was static or only used cached data (\`"use cache"\`). If you expected this route to be prerenderable update your \`generateMetadata\` to not use Request data and only use cached external data. Otherwise, add \`await connection()\` somewhere within this route to indicate explicitly it should not be prerendered.`);
-        } else if (dynamicValidation.hasDynamicViewport) {
-          if (syncError) {
-            console.error(syncError);
-            throw new _staticgenerationbailout.StaticGenBailoutError(`Route "${route}" has a \`generateViewport\` that could not finish rendering before ${syncExpression} was used. Follow the instructions in the error for this expression to resolve.`);
-          }
-          throw new _staticgenerationbailout.StaticGenBailoutError(`Route "${route}" has a \`generateViewport\` that depends on Request data (\`cookies()\`, etc...) or external data (\`fetch(...)\`, etc...) but the rest of the route was static or only used cached data (\`"use cache"\`). If you expected this route to be prerenderable update your \`generateViewport\` to not use Request data and only use cached external data. Otherwise, add \`await connection()\` somewhere within this route to indicate explicitly it should not be prerendered.`);
-        }
-      }
-    }
-  })(dynamicRendering);
-  return dynamicRendering;
-}
-
-var hasRequiredIsDynamicUsageError;
-function requireIsDynamicUsageError() {
-  if (hasRequiredIsDynamicUsageError) return isDynamicUsageError;
-  hasRequiredIsDynamicUsageError = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    Object.defineProperty(exports, "isDynamicUsageError", {
-      enumerable: true,
-      get: function () {
-        return isDynamicUsageError;
-      }
-    });
-    const _hooksservercontext = requireHooksServerContext();
-    const _bailouttocsr = requireBailoutToCsr();
-    const _isnextroutererror = requireIsNextRouterError();
-    const _dynamicrendering = requireDynamicRendering();
-    const isDynamicUsageError = err => (0, _hooksservercontext.isDynamicServerError)(err) || (0, _bailouttocsr.isBailoutToCSRError)(err) || (0, _isnextroutererror.isNextRouterError)(err) || (0, _dynamicrendering.isDynamicPostpone)(err);
-  })(isDynamicUsageError);
-  return isDynamicUsageError;
-}
-
-var isPostpone = {};
-
-var hasRequiredIsPostpone;
-function requireIsPostpone() {
-  if (hasRequiredIsPostpone) return isPostpone;
-  hasRequiredIsPostpone = 1;
-  (function (exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    Object.defineProperty(exports, "isPostpone", {
-      enumerable: true,
-      get: function () {
-        return isPostpone;
-      }
-    });
-    const REACT_POSTPONE_TYPE = Symbol.for('react.postpone');
-    function isPostpone(error) {
-      return typeof error === 'object' && error !== null && error.$$typeof === REACT_POSTPONE_TYPE;
-    }
-  })(isPostpone);
-  return isPostpone;
-}
-
-var hasRequiredUnstableRethrow;
-function requireUnstableRethrow() {
-  if (hasRequiredUnstableRethrow) return unstableRethrow.exports;
-  hasRequiredUnstableRethrow = 1;
-  (function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    Object.defineProperty(exports, "unstable_rethrow", {
-      enumerable: true,
-      get: function () {
-        return unstable_rethrow;
-      }
-    });
-    const _isdynamicusageerror = requireIsDynamicUsageError();
-    const _ispostpone = requireIsPostpone();
-    const _bailouttocsr = requireBailoutToCsr();
-    const _isnextroutererror = requireIsNextRouterError();
-    function unstable_rethrow(error) {
-      if ((0, _isnextroutererror.isNextRouterError)(error) || (0, _bailouttocsr.isBailoutToCSRError)(error) || (0, _isdynamicusageerror.isDynamicUsageError)(error) || (0, _ispostpone.isPostpone)(error)) {
-        throw error;
-      }
-      if (error instanceof Error && 'cause' in error) {
-        unstable_rethrow(error.cause);
-      }
-    }
-    if ((typeof exports.default === 'function' || typeof exports.default === 'object' && exports.default !== null) && typeof exports.default.__esModule === 'undefined') {
-      Object.defineProperty(exports.default, '__esModule', {
-        value: true
-      });
-      Object.assign(exports.default, exports);
-      module.exports = exports.default;
-    }
-  })(unstableRethrow, unstableRethrow.exports);
-  return unstableRethrow.exports;
-}
-
-/** @internal */
-var hasRequiredNavigation_reactServer;
-function requireNavigation_reactServer() {
-  if (hasRequiredNavigation_reactServer) return navigation_reactServer.exports;
-  hasRequiredNavigation_reactServer = 1;
-  (function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      ReadonlyURLSearchParams: function () {
-        return ReadonlyURLSearchParams;
-      },
-      RedirectType: function () {
-        return _redirect.RedirectType;
-      },
-      notFound: function () {
-        return _notfound.notFound;
-      },
-      permanentRedirect: function () {
-        return _redirect.permanentRedirect;
-      },
-      redirect: function () {
-        return _redirect.redirect;
-      },
-      unstable_rethrow: function () {
-        return _unstablerethrow.unstable_rethrow;
-      }
-    });
-    const _redirect = requireRedirect();
-    const _notfound = requireNotFound();
-    const _unstablerethrow = requireUnstableRethrow();
-    class ReadonlyURLSearchParamsError extends Error {
-      constructor() {
-        super('Method unavailable on `ReadonlyURLSearchParams`. Read more: https://nextjs.org/docs/app/api-reference/functions/use-search-params#updating-searchparams');
-      }
-    }
-    class ReadonlyURLSearchParams extends URLSearchParams {
-      /** @deprecated Method unavailable on `ReadonlyURLSearchParams`. Read more: https://nextjs.org/docs/app/api-reference/functions/use-search-params#updating-searchparams */append() {
-        throw new ReadonlyURLSearchParamsError();
-      }
-      /** @deprecated Method unavailable on `ReadonlyURLSearchParams`. Read more: https://nextjs.org/docs/app/api-reference/functions/use-search-params#updating-searchparams */
-      delete() {
-        throw new ReadonlyURLSearchParamsError();
-      }
-      /** @deprecated Method unavailable on `ReadonlyURLSearchParams`. Read more: https://nextjs.org/docs/app/api-reference/functions/use-search-params#updating-searchparams */
-      set() {
-        throw new ReadonlyURLSearchParamsError();
-      }
-      /** @deprecated Method unavailable on `ReadonlyURLSearchParams`. Read more: https://nextjs.org/docs/app/api-reference/functions/use-search-params#updating-searchparams */
-      sort() {
-        throw new ReadonlyURLSearchParamsError();
-      }
-    }
-    if ((typeof exports.default === 'function' || typeof exports.default === 'object' && exports.default !== null) && typeof exports.default.__esModule === 'undefined') {
-      Object.defineProperty(exports.default, '__esModule', {
-        value: true
-      });
-      Object.assign(exports.default, exports);
-      module.exports = exports.default;
-    }
-  })(navigation_reactServer, navigation_reactServer.exports);
-  return navigation_reactServer.exports;
-}
-
-var serverInsertedHtml_sharedRuntime = {};
-
-var _interop_require_wildcard = {};
-
-var hasRequired_interop_require_wildcard;
-
-function require_interop_require_wildcard () {
-	if (hasRequired_interop_require_wildcard) return _interop_require_wildcard;
-	hasRequired_interop_require_wildcard = 1;
-
-	function _getRequireWildcardCache(nodeInterop) {
-	    if (typeof WeakMap !== "function") return null;
-
-	    var cacheBabelInterop = new WeakMap();
-	    var cacheNodeInterop = new WeakMap();
-
-	    return (_getRequireWildcardCache = function(nodeInterop) {
-	        return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
-	    })(nodeInterop);
-	}
-	function _interop_require_wildcard$1(obj, nodeInterop) {
-	    if (!nodeInterop && obj && obj.__esModule) return obj;
-	    if (obj === null || typeof obj !== "object" && typeof obj !== "function") return { default: obj };
-
-	    var cache = _getRequireWildcardCache(nodeInterop);
-
-	    if (cache && cache.has(obj)) return cache.get(obj);
-
-	    var newObj = { __proto__: null };
-	    var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;
-
-	    for (var key in obj) {
-	        if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) {
-	            var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;
-	            if (desc && (desc.get || desc.set)) Object.defineProperty(newObj, key, desc);
-	            else newObj[key] = obj[key];
-	        }
-	    }
-
-	    newObj.default = obj;
-
-	    if (cache) cache.set(obj, newObj);
-
-	    return newObj;
-	}
-	_interop_require_wildcard._ = _interop_require_wildcard$1;
-	return _interop_require_wildcard;
-}
-
-var hasRequiredServerInsertedHtml_sharedRuntime;
-function requireServerInsertedHtml_sharedRuntime() {
-  if (hasRequiredServerInsertedHtml_sharedRuntime) return serverInsertedHtml_sharedRuntime;
-  hasRequiredServerInsertedHtml_sharedRuntime = 1;
-  (function (exports) {
-    "use client";
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      ServerInsertedHTMLContext: function () {
-        return ServerInsertedHTMLContext;
-      },
-      useServerInsertedHTML: function () {
-        return useServerInsertedHTML;
-      }
-    });
-    const _interop_require_wildcard = /*@__PURE__*/require_interop_require_wildcard();
-    const _react = /*#__PURE__*/_interop_require_wildcard._(React__default);
-    const ServerInsertedHTMLContext = /*#__PURE__*/_react.default.createContext(null);
-    function useServerInsertedHTML(callback) {
-      const addInsertedServerHTMLCallback = (0, _react.useContext)(ServerInsertedHTMLContext);
-      // Should have no effects on client where there's no flush effects provider
-      if (addInsertedServerHTMLCallback) {
-        addInsertedServerHTMLCallback(callback);
-      }
-    }
-  })(serverInsertedHtml_sharedRuntime);
-  return serverInsertedHtml_sharedRuntime;
-}
-
-var bailoutToClientRendering = {exports: {}};
-
-var hasRequiredBailoutToClientRendering;
-function requireBailoutToClientRendering() {
-  if (hasRequiredBailoutToClientRendering) return bailoutToClientRendering.exports;
-  hasRequiredBailoutToClientRendering = 1;
-  (function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    Object.defineProperty(exports, "bailoutToClientRendering", {
-      enumerable: true,
-      get: function () {
-        return bailoutToClientRendering;
-      }
-    });
-    const _bailouttocsr = requireBailoutToCsr();
-    const _workasyncstorageexternal = requireWorkAsyncStorage_external();
-    function bailoutToClientRendering(reason) {
-      const workStore = _workasyncstorageexternal.workAsyncStorage.getStore();
-      if (workStore == null ? void 0 : workStore.forceStatic) return;
-      if (workStore == null ? void 0 : workStore.isStaticGeneration) throw new _bailouttocsr.BailoutToCSRError(reason);
-    }
-    if ((typeof exports.default === 'function' || typeof exports.default === 'object' && exports.default !== null) && typeof exports.default.__esModule === 'undefined') {
-      Object.defineProperty(exports.default, '__esModule', {
-        value: true
-      });
-      Object.assign(exports.default, exports);
-      module.exports = exports.default;
-    }
-  })(bailoutToClientRendering, bailoutToClientRendering.exports);
-  return bailoutToClientRendering.exports;
-}
-
-var hasRequiredNavigation$1;
-function requireNavigation$1() {
-  if (hasRequiredNavigation$1) return navigation$1.exports;
-  hasRequiredNavigation$1 = 1;
-  (function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-    function _export(target, all) {
-      for (var name in all) Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-      });
-    }
-    _export(exports, {
-      ReadonlyURLSearchParams: function () {
-        return _navigationreactserver.ReadonlyURLSearchParams;
-      },
-      RedirectType: function () {
-        return _navigationreactserver.RedirectType;
-      },
-      ServerInsertedHTMLContext: function () {
-        return _serverinsertedhtmlsharedruntime.ServerInsertedHTMLContext;
-      },
-      notFound: function () {
-        return _navigationreactserver.notFound;
-      },
-      permanentRedirect: function () {
-        return _navigationreactserver.permanentRedirect;
-      },
-      redirect: function () {
-        return _navigationreactserver.redirect;
-      },
-      unstable_rethrow: function () {
-        return _navigationreactserver.unstable_rethrow;
-      },
-      useParams: function () {
-        return useParams;
-      },
-      usePathname: function () {
-        return usePathname;
-      },
-      useRouter: function () {
-        return useRouter;
-      },
-      useSearchParams: function () {
-        return useSearchParams;
-      },
-      useSelectedLayoutSegment: function () {
-        return useSelectedLayoutSegment;
-      },
-      useSelectedLayoutSegments: function () {
-        return useSelectedLayoutSegments;
-      },
-      useServerInsertedHTML: function () {
-        return _serverinsertedhtmlsharedruntime.useServerInsertedHTML;
-      }
-    });
-    const _react = React__default;
-    const _approutercontextsharedruntime = requireAppRouterContext_sharedRuntime();
-    const _hooksclientcontextsharedruntime = requireHooksClientContext_sharedRuntime();
-    const _getsegmentvalue = requireGetSegmentValue();
-    const _segment = requireSegment();
-    const _navigationreactserver = requireNavigation_reactServer();
-    const _dynamicrendering = requireDynamicRendering();
-    const _serverinsertedhtmlsharedruntime = requireServerInsertedHtml_sharedRuntime();
-    function useSearchParams() {
-      const searchParams = (0, _react.useContext)(_hooksclientcontextsharedruntime.SearchParamsContext);
-      // In the case where this is `null`, the compat types added in
-      // `next-env.d.ts` will add a new overload that changes the return type to
-      // include `null`.
-      const readonlySearchParams = (0, _react.useMemo)(() => {
-        if (!searchParams) {
-          // When the router is not ready in pages, we won't have the search params
-          // available.
-          return null;
-        }
-        return new _navigationreactserver.ReadonlyURLSearchParams(searchParams);
-      }, [searchParams]);
-      if (typeof window === 'undefined') {
-        // AsyncLocalStorage should not be included in the client bundle.
-        const {
-          bailoutToClientRendering
-        } = requireBailoutToClientRendering();
-        // TODO-APP: handle dynamic = 'force-static' here and on the client
-        bailoutToClientRendering('useSearchParams()');
-      }
-      return readonlySearchParams;
-    }
-    function usePathname() {
-      (0, _dynamicrendering.useDynamicRouteParams)('usePathname()');
-      // In the case where this is `null`, the compat types added in `next-env.d.ts`
-      // will add a new overload that changes the return type to include `null`.
-      return (0, _react.useContext)(_hooksclientcontextsharedruntime.PathnameContext);
-    }
-    function useRouter() {
-      const router = (0, _react.useContext)(_approutercontextsharedruntime.AppRouterContext);
-      if (router === null) {
-        throw new Error('invariant expected app router to be mounted');
-      }
-      return router;
-    }
-    function useParams() {
-      (0, _dynamicrendering.useDynamicRouteParams)('useParams()');
-      return (0, _react.useContext)(_hooksclientcontextsharedruntime.PathParamsContext);
-    }
-    /** Get the canonical parameters from the current level to the leaf node. */ // Client components API
-    function getSelectedLayoutSegmentPath(tree, parallelRouteKey, first, segmentPath) {
-      if (first === void 0) first = true;
-      if (segmentPath === void 0) segmentPath = [];
-      let node;
-      if (first) {
-        // Use the provided parallel route key on the first parallel route
-        node = tree[1][parallelRouteKey];
-      } else {
-        // After first parallel route prefer children, if there's no children pick the first parallel route.
-        const parallelRoutes = tree[1];
-        var _parallelRoutes_children;
-        node = (_parallelRoutes_children = parallelRoutes.children) != null ? _parallelRoutes_children : Object.values(parallelRoutes)[0];
-      }
-      if (!node) return segmentPath;
-      const segment = node[0];
-      let segmentValue = (0, _getsegmentvalue.getSegmentValue)(segment);
-      if (!segmentValue || segmentValue.startsWith(_segment.PAGE_SEGMENT_KEY)) {
-        return segmentPath;
-      }
-      segmentPath.push(segmentValue);
-      return getSelectedLayoutSegmentPath(node, parallelRouteKey, false, segmentPath);
-    }
-    function useSelectedLayoutSegments(parallelRouteKey) {
-      if (parallelRouteKey === void 0) parallelRouteKey = 'children';
-      (0, _dynamicrendering.useDynamicRouteParams)('useSelectedLayoutSegments()');
-      const context = (0, _react.useContext)(_approutercontextsharedruntime.LayoutRouterContext);
-      // @ts-expect-error This only happens in `pages`. Type is overwritten in navigation.d.ts
-      if (!context) return null;
-      return getSelectedLayoutSegmentPath(context.tree, parallelRouteKey);
-    }
-    function useSelectedLayoutSegment(parallelRouteKey) {
-      if (parallelRouteKey === void 0) parallelRouteKey = 'children';
-      (0, _dynamicrendering.useDynamicRouteParams)('useSelectedLayoutSegment()');
-      const selectedLayoutSegments = useSelectedLayoutSegments(parallelRouteKey);
-      if (!selectedLayoutSegments || selectedLayoutSegments.length === 0) {
-        return null;
-      }
-      const selectedLayoutSegment = parallelRouteKey === 'children' ? selectedLayoutSegments[0] : selectedLayoutSegments[selectedLayoutSegments.length - 1];
-      // if the default slot is showing, we return null since it's not technically "selected" (it's a fallback)
-      // and returning an internal value like `__DEFAULT__` would be confusing.
-      return selectedLayoutSegment === _segment.DEFAULT_SEGMENT_KEY ? null : selectedLayoutSegment;
-    }
-    if ((typeof exports.default === 'function' || typeof exports.default === 'object' && exports.default !== null) && typeof exports.default.__esModule === 'undefined') {
-      Object.defineProperty(exports.default, '__esModule', {
-        value: true
-      });
-      Object.assign(exports.default, exports);
-      module.exports = exports.default;
-    }
-  })(navigation$1, navigation$1.exports);
-  return navigation$1.exports;
-}
-
-var navigation;
-var hasRequiredNavigation;
-function requireNavigation() {
-  if (hasRequiredNavigation) return navigation;
-  hasRequiredNavigation = 1;
-  navigation = requireNavigation$1();
-  return navigation;
-}
-
-requireNavigation();
-
-const desc = `Steps to Play the Fraction Comparison Game:
-1. You'll start with two chocolate bars representing fraction1 and fration2.
-2. Break the first chocolate bar into equal parts by clicking the "Split" button.
-3. Select the pieces of the first bar that represent the fraction fraction1.
-4. Break the second chocolate bar into equal parts by clicking the "Split" button.
-5. Select the pieces of the second bar that represent the fraction fraction2.
-6. Compare the selected pieces from both bars to determine which fraction is larger.
-7. Your goal is to correctly identify which fraction has a greater value.`;
-// Create a context for the game state
-const GameStateContext = /*#__PURE__*/createContext(undefined);
-// Custom hook to use the game state context
-const useGameState = () => {
-  const context = useContext(GameStateContext);
-  if (context === undefined) {
-    throw new Error('useGameState must be used within a GameStateProvider');
-  }
-  return context;
-};
-
-// packages/react/primitive/src/Primitive.tsx
-var NODES = [
-  "a",
-  "button",
-  "div",
-  "form",
-  "h2",
-  "h3",
-  "img",
-  "input",
-  "label",
-  "li",
-  "nav",
-  "ol",
-  "p",
-  "span",
-  "svg",
-  "ul"
-];
-var Primitive = NODES.reduce((primitive, node) => {
-  const Node = React.forwardRef((props, forwardedRef) => {
-    const { asChild, ...primitiveProps } = props;
-    const Comp = asChild ? Slot : node;
-    if (typeof window !== "undefined") {
-      window[Symbol.for("radix-ui")] = true;
-    }
-    return /* @__PURE__ */ jsx(Comp, { ...primitiveProps, ref: forwardedRef });
-  });
-  Node.displayName = `Primitive.${node}`;
-  return { ...primitive, [node]: Node };
-}, {});
-function dispatchDiscreteCustomEvent(target, event) {
-  if (target) ReactDOM.flushSync(() => target.dispatchEvent(event));
-}
-
-// packages/react/use-layout-effect/src/useLayoutEffect.tsx
-var useLayoutEffect2 = Boolean(globalThis?.document) ? React.useLayoutEffect : () => {
-};
-
-function useStateMachine$1(initialState, machine) {
-  return React.useReducer((state, event) => {
-    const nextState = machine[state][event];
-    return nextState ?? state;
-  }, initialState);
-}
-
-// packages/react/presence/src/Presence.tsx
-var Presence = (props) => {
-  const { present, children } = props;
-  const presence = usePresence(present);
-  const child = typeof children === "function" ? children({ present: presence.isPresent }) : React.Children.only(children);
-  const ref = useComposedRefs(presence.ref, getElementRef(child));
-  const forceMount = typeof children === "function";
-  return forceMount || presence.isPresent ? React.cloneElement(child, { ref }) : null;
-};
-Presence.displayName = "Presence";
-function usePresence(present) {
-  const [node, setNode] = React.useState();
-  const stylesRef = React.useRef({});
-  const prevPresentRef = React.useRef(present);
-  const prevAnimationNameRef = React.useRef("none");
-  const initialState = present ? "mounted" : "unmounted";
-  const [state, send] = useStateMachine$1(initialState, {
-    mounted: {
-      UNMOUNT: "unmounted",
-      ANIMATION_OUT: "unmountSuspended"
-    },
-    unmountSuspended: {
-      MOUNT: "mounted",
-      ANIMATION_END: "unmounted"
-    },
-    unmounted: {
-      MOUNT: "mounted"
-    }
-  });
-  React.useEffect(() => {
-    const currentAnimationName = getAnimationName(stylesRef.current);
-    prevAnimationNameRef.current = state === "mounted" ? currentAnimationName : "none";
-  }, [state]);
-  useLayoutEffect2(() => {
-    const styles = stylesRef.current;
-    const wasPresent = prevPresentRef.current;
-    const hasPresentChanged = wasPresent !== present;
-    if (hasPresentChanged) {
-      const prevAnimationName = prevAnimationNameRef.current;
-      const currentAnimationName = getAnimationName(styles);
-      if (present) {
-        send("MOUNT");
-      } else if (currentAnimationName === "none" || styles?.display === "none") {
-        send("UNMOUNT");
-      } else {
-        const isAnimating = prevAnimationName !== currentAnimationName;
-        if (wasPresent && isAnimating) {
-          send("ANIMATION_OUT");
-        } else {
-          send("UNMOUNT");
-        }
-      }
-      prevPresentRef.current = present;
-    }
-  }, [present, send]);
-  useLayoutEffect2(() => {
-    if (node) {
-      let timeoutId;
-      const ownerWindow = node.ownerDocument.defaultView ?? window;
-      const handleAnimationEnd = (event) => {
-        const currentAnimationName = getAnimationName(stylesRef.current);
-        const isCurrentAnimation = currentAnimationName.includes(event.animationName);
-        if (event.target === node && isCurrentAnimation) {
-          send("ANIMATION_END");
-          if (!prevPresentRef.current) {
-            const currentFillMode = node.style.animationFillMode;
-            node.style.animationFillMode = "forwards";
-            timeoutId = ownerWindow.setTimeout(() => {
-              if (node.style.animationFillMode === "forwards") {
-                node.style.animationFillMode = currentFillMode;
-              }
-            });
-          }
-        }
-      };
-      const handleAnimationStart = (event) => {
-        if (event.target === node) {
-          prevAnimationNameRef.current = getAnimationName(stylesRef.current);
-        }
-      };
-      node.addEventListener("animationstart", handleAnimationStart);
-      node.addEventListener("animationcancel", handleAnimationEnd);
-      node.addEventListener("animationend", handleAnimationEnd);
-      return () => {
-        ownerWindow.clearTimeout(timeoutId);
-        node.removeEventListener("animationstart", handleAnimationStart);
-        node.removeEventListener("animationcancel", handleAnimationEnd);
-        node.removeEventListener("animationend", handleAnimationEnd);
-      };
-    } else {
-      send("ANIMATION_END");
-    }
-  }, [node, send]);
-  return {
-    isPresent: ["mounted", "unmountSuspended"].includes(state),
-    ref: React.useCallback((node2) => {
-      if (node2) stylesRef.current = getComputedStyle(node2);
-      setNode(node2);
-    }, [])
-  };
-}
-function getAnimationName(styles) {
-  return styles?.animationName || "none";
-}
-function getElementRef(element) {
-  let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-
-// packages/react/context/src/createContext.tsx
-function createContextScope(scopeName, createContextScopeDeps = []) {
-  let defaultContexts = [];
-  function createContext3(rootComponentName, defaultContext) {
-    const BaseContext = React.createContext(defaultContext);
-    const index = defaultContexts.length;
-    defaultContexts = [...defaultContexts, defaultContext];
-    const Provider = (props) => {
-      const { scope, children, ...context } = props;
-      const Context = scope?.[scopeName]?.[index] || BaseContext;
-      const value = React.useMemo(() => context, Object.values(context));
-      return /* @__PURE__ */ jsx(Context.Provider, { value, children });
-    };
-    Provider.displayName = rootComponentName + "Provider";
-    function useContext2(consumerName, scope) {
-      const Context = scope?.[scopeName]?.[index] || BaseContext;
-      const context = React.useContext(Context);
-      if (context) return context;
-      if (defaultContext !== void 0) return defaultContext;
-      throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
-    }
-    return [Provider, useContext2];
-  }
-  const createScope = () => {
-    const scopeContexts = defaultContexts.map((defaultContext) => {
-      return React.createContext(defaultContext);
-    });
-    return function useScope(scope) {
-      const contexts = scope?.[scopeName] || scopeContexts;
-      return React.useMemo(
-        () => ({ [`__scope${scopeName}`]: { ...scope, [scopeName]: contexts } }),
-        [scope, contexts]
-      );
-    };
-  };
-  createScope.scopeName = scopeName;
-  return [createContext3, composeContextScopes(createScope, ...createContextScopeDeps)];
-}
-function composeContextScopes(...scopes) {
-  const baseScope = scopes[0];
-  if (scopes.length === 1) return baseScope;
-  const createScope = () => {
-    const scopeHooks = scopes.map((createScope2) => ({
-      useScope: createScope2(),
-      scopeName: createScope2.scopeName
-    }));
-    return function useComposedScopes(overrideScopes) {
-      const nextScopes = scopeHooks.reduce((nextScopes2, { useScope, scopeName }) => {
-        const scopeProps = useScope(overrideScopes);
-        const currentScope = scopeProps[`__scope${scopeName}`];
-        return { ...nextScopes2, ...currentScope };
-      }, {});
-      return React.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
-    };
-  };
-  createScope.scopeName = baseScope.scopeName;
-  return createScope;
-}
-
-// packages/react/use-callback-ref/src/useCallbackRef.tsx
-function useCallbackRef$1(callback) {
-  const callbackRef = React.useRef(callback);
-  React.useEffect(() => {
-    callbackRef.current = callback;
-  });
-  return React.useMemo(() => (...args) => callbackRef.current?.(...args), []);
-}
-
-// packages/react/direction/src/Direction.tsx
-var DirectionContext = React.createContext(void 0);
-function useDirection(localDir) {
-  const globalDir = React.useContext(DirectionContext);
-  return localDir || globalDir || "ltr";
-}
-
-// packages/core/number/src/number.ts
-function clamp$1(value, [min, max]) {
-  return Math.min(max, Math.max(min, value));
-}
-
-// packages/core/primitive/src/primitive.tsx
-function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
-  return function handleEvent(event) {
-    originalEventHandler?.(event);
-    if (checkForDefaultPrevented === false || !event.defaultPrevented) {
-      return ourEventHandler?.(event);
-    }
-  };
-}
-
-function useStateMachine(initialState, machine) {
-  return React.useReducer((state, event) => {
-    const nextState = machine[state][event];
-    return nextState ?? state;
-  }, initialState);
-}
-var SCROLL_AREA_NAME = "ScrollArea";
-var [createScrollAreaContext, createScrollAreaScope] = createContextScope(SCROLL_AREA_NAME);
-var [ScrollAreaProvider, useScrollAreaContext] = createScrollAreaContext(SCROLL_AREA_NAME);
-var ScrollArea$3 = React.forwardRef(
-  (props, forwardedRef) => {
-    const {
-      __scopeScrollArea,
-      type = "hover",
-      dir,
-      scrollHideDelay = 600,
-      ...scrollAreaProps
-    } = props;
-    const [scrollArea, setScrollArea] = React.useState(null);
-    const [viewport, setViewport] = React.useState(null);
-    const [content, setContent] = React.useState(null);
-    const [scrollbarX, setScrollbarX] = React.useState(null);
-    const [scrollbarY, setScrollbarY] = React.useState(null);
-    const [cornerWidth, setCornerWidth] = React.useState(0);
-    const [cornerHeight, setCornerHeight] = React.useState(0);
-    const [scrollbarXEnabled, setScrollbarXEnabled] = React.useState(false);
-    const [scrollbarYEnabled, setScrollbarYEnabled] = React.useState(false);
-    const composedRefs = useComposedRefs(forwardedRef, (node) => setScrollArea(node));
-    const direction = useDirection(dir);
-    return /* @__PURE__ */ jsx(
-      ScrollAreaProvider,
-      {
-        scope: __scopeScrollArea,
-        type,
-        dir: direction,
-        scrollHideDelay,
-        scrollArea,
-        viewport,
-        onViewportChange: setViewport,
-        content,
-        onContentChange: setContent,
-        scrollbarX,
-        onScrollbarXChange: setScrollbarX,
-        scrollbarXEnabled,
-        onScrollbarXEnabledChange: setScrollbarXEnabled,
-        scrollbarY,
-        onScrollbarYChange: setScrollbarY,
-        scrollbarYEnabled,
-        onScrollbarYEnabledChange: setScrollbarYEnabled,
-        onCornerWidthChange: setCornerWidth,
-        onCornerHeightChange: setCornerHeight,
-        children: /* @__PURE__ */ jsx(
-          Primitive.div,
-          {
-            dir: direction,
-            ...scrollAreaProps,
-            ref: composedRefs,
-            style: {
-              position: "relative",
-              // Pass corner sizes as CSS vars to reduce re-renders of context consumers
-              ["--radix-scroll-area-corner-width"]: cornerWidth + "px",
-              ["--radix-scroll-area-corner-height"]: cornerHeight + "px",
-              ...props.style
-            }
-          }
-        )
-      }
-    );
-  }
-);
-ScrollArea$3.displayName = SCROLL_AREA_NAME;
-var VIEWPORT_NAME$1 = "ScrollAreaViewport";
-var ScrollAreaViewport = React.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeScrollArea, children, nonce, ...viewportProps } = props;
-    const context = useScrollAreaContext(VIEWPORT_NAME$1, __scopeScrollArea);
-    const ref = React.useRef(null);
-    const composedRefs = useComposedRefs(forwardedRef, ref, context.onViewportChange);
-    return /* @__PURE__ */ jsxs(Fragment, { children: [
-      /* @__PURE__ */ jsx(
-        "style",
-        {
-          dangerouslySetInnerHTML: {
-            __html: `[data-radix-scroll-area-viewport]{scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;}[data-radix-scroll-area-viewport]::-webkit-scrollbar{display:none}`
-          },
-          nonce
-        }
-      ),
-      /* @__PURE__ */ jsx(
-        Primitive.div,
-        {
-          "data-radix-scroll-area-viewport": "",
-          ...viewportProps,
-          ref: composedRefs,
-          style: {
-            /**
-             * We don't support `visible` because the intention is to have at least one scrollbar
-             * if this component is used and `visible` will behave like `auto` in that case
-             * https://developer.mozilla.org/en-US/docs/Web/CSS/overflow#description
-             *
-             * We don't handle `auto` because the intention is for the native implementation
-             * to be hidden if using this component. We just want to ensure the node is scrollable
-             * so could have used either `scroll` or `auto` here. We picked `scroll` to prevent
-             * the browser from having to work out whether to render native scrollbars or not,
-             * we tell it to with the intention of hiding them in CSS.
-             */
-            overflowX: context.scrollbarXEnabled ? "scroll" : "hidden",
-            overflowY: context.scrollbarYEnabled ? "scroll" : "hidden",
-            ...props.style
-          },
-          children: /* @__PURE__ */ jsx("div", { ref: context.onContentChange, style: { minWidth: "100%", display: "table" }, children })
-        }
-      )
-    ] });
-  }
-);
-ScrollAreaViewport.displayName = VIEWPORT_NAME$1;
-var SCROLLBAR_NAME = "ScrollAreaScrollbar";
-var ScrollAreaScrollbar = React.forwardRef(
-  (props, forwardedRef) => {
-    const { forceMount, ...scrollbarProps } = props;
-    const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
-    const { onScrollbarXEnabledChange, onScrollbarYEnabledChange } = context;
-    const isHorizontal = props.orientation === "horizontal";
-    React.useEffect(() => {
-      isHorizontal ? onScrollbarXEnabledChange(true) : onScrollbarYEnabledChange(true);
-      return () => {
-        isHorizontal ? onScrollbarXEnabledChange(false) : onScrollbarYEnabledChange(false);
-      };
-    }, [isHorizontal, onScrollbarXEnabledChange, onScrollbarYEnabledChange]);
-    return context.type === "hover" ? /* @__PURE__ */ jsx(ScrollAreaScrollbarHover, { ...scrollbarProps, ref: forwardedRef, forceMount }) : context.type === "scroll" ? /* @__PURE__ */ jsx(ScrollAreaScrollbarScroll, { ...scrollbarProps, ref: forwardedRef, forceMount }) : context.type === "auto" ? /* @__PURE__ */ jsx(ScrollAreaScrollbarAuto, { ...scrollbarProps, ref: forwardedRef, forceMount }) : context.type === "always" ? /* @__PURE__ */ jsx(ScrollAreaScrollbarVisible, { ...scrollbarProps, ref: forwardedRef }) : null;
-  }
-);
-ScrollAreaScrollbar.displayName = SCROLLBAR_NAME;
-var ScrollAreaScrollbarHover = React.forwardRef((props, forwardedRef) => {
-  const { forceMount, ...scrollbarProps } = props;
-  const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
-  const [visible, setVisible] = React.useState(false);
-  React.useEffect(() => {
-    const scrollArea = context.scrollArea;
-    let hideTimer = 0;
-    if (scrollArea) {
-      const handlePointerEnter = () => {
-        window.clearTimeout(hideTimer);
-        setVisible(true);
-      };
-      const handlePointerLeave = () => {
-        hideTimer = window.setTimeout(() => setVisible(false), context.scrollHideDelay);
-      };
-      scrollArea.addEventListener("pointerenter", handlePointerEnter);
-      scrollArea.addEventListener("pointerleave", handlePointerLeave);
-      return () => {
-        window.clearTimeout(hideTimer);
-        scrollArea.removeEventListener("pointerenter", handlePointerEnter);
-        scrollArea.removeEventListener("pointerleave", handlePointerLeave);
-      };
-    }
-  }, [context.scrollArea, context.scrollHideDelay]);
-  return /* @__PURE__ */ jsx(Presence, { present: forceMount || visible, children: /* @__PURE__ */ jsx(
-    ScrollAreaScrollbarAuto,
-    {
-      "data-state": visible ? "visible" : "hidden",
-      ...scrollbarProps,
-      ref: forwardedRef
-    }
-  ) });
-});
-var ScrollAreaScrollbarScroll = React.forwardRef((props, forwardedRef) => {
-  const { forceMount, ...scrollbarProps } = props;
-  const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
-  const isHorizontal = props.orientation === "horizontal";
-  const debounceScrollEnd = useDebounceCallback(() => send("SCROLL_END"), 100);
-  const [state, send] = useStateMachine("hidden", {
-    hidden: {
-      SCROLL: "scrolling"
-    },
-    scrolling: {
-      SCROLL_END: "idle",
-      POINTER_ENTER: "interacting"
-    },
-    interacting: {
-      SCROLL: "interacting",
-      POINTER_LEAVE: "idle"
-    },
-    idle: {
-      HIDE: "hidden",
-      SCROLL: "scrolling",
-      POINTER_ENTER: "interacting"
-    }
-  });
-  React.useEffect(() => {
-    if (state === "idle") {
-      const hideTimer = window.setTimeout(() => send("HIDE"), context.scrollHideDelay);
-      return () => window.clearTimeout(hideTimer);
-    }
-  }, [state, context.scrollHideDelay, send]);
-  React.useEffect(() => {
-    const viewport = context.viewport;
-    const scrollDirection = isHorizontal ? "scrollLeft" : "scrollTop";
-    if (viewport) {
-      let prevScrollPos = viewport[scrollDirection];
-      const handleScroll = () => {
-        const scrollPos = viewport[scrollDirection];
-        const hasScrollInDirectionChanged = prevScrollPos !== scrollPos;
-        if (hasScrollInDirectionChanged) {
-          send("SCROLL");
-          debounceScrollEnd();
-        }
-        prevScrollPos = scrollPos;
-      };
-      viewport.addEventListener("scroll", handleScroll);
-      return () => viewport.removeEventListener("scroll", handleScroll);
-    }
-  }, [context.viewport, isHorizontal, send, debounceScrollEnd]);
-  return /* @__PURE__ */ jsx(Presence, { present: forceMount || state !== "hidden", children: /* @__PURE__ */ jsx(
-    ScrollAreaScrollbarVisible,
-    {
-      "data-state": state === "hidden" ? "hidden" : "visible",
-      ...scrollbarProps,
-      ref: forwardedRef,
-      onPointerEnter: composeEventHandlers(props.onPointerEnter, () => send("POINTER_ENTER")),
-      onPointerLeave: composeEventHandlers(props.onPointerLeave, () => send("POINTER_LEAVE"))
-    }
-  ) });
-});
-var ScrollAreaScrollbarAuto = React.forwardRef((props, forwardedRef) => {
-  const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
-  const { forceMount, ...scrollbarProps } = props;
-  const [visible, setVisible] = React.useState(false);
-  const isHorizontal = props.orientation === "horizontal";
-  const handleResize = useDebounceCallback(() => {
-    if (context.viewport) {
-      const isOverflowX = context.viewport.offsetWidth < context.viewport.scrollWidth;
-      const isOverflowY = context.viewport.offsetHeight < context.viewport.scrollHeight;
-      setVisible(isHorizontal ? isOverflowX : isOverflowY);
-    }
-  }, 10);
-  useResizeObserver(context.viewport, handleResize);
-  useResizeObserver(context.content, handleResize);
-  return /* @__PURE__ */ jsx(Presence, { present: forceMount || visible, children: /* @__PURE__ */ jsx(
-    ScrollAreaScrollbarVisible,
-    {
-      "data-state": visible ? "visible" : "hidden",
-      ...scrollbarProps,
-      ref: forwardedRef
-    }
-  ) });
-});
-var ScrollAreaScrollbarVisible = React.forwardRef((props, forwardedRef) => {
-  const { orientation = "vertical", ...scrollbarProps } = props;
-  const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
-  const thumbRef = React.useRef(null);
-  const pointerOffsetRef = React.useRef(0);
-  const [sizes, setSizes] = React.useState({
-    content: 0,
-    viewport: 0,
-    scrollbar: { size: 0, paddingStart: 0, paddingEnd: 0 }
-  });
-  const thumbRatio = getThumbRatio(sizes.viewport, sizes.content);
-  const commonProps = {
-    ...scrollbarProps,
-    sizes,
-    onSizesChange: setSizes,
-    hasThumb: Boolean(thumbRatio > 0 && thumbRatio < 1),
-    onThumbChange: (thumb) => thumbRef.current = thumb,
-    onThumbPointerUp: () => pointerOffsetRef.current = 0,
-    onThumbPointerDown: (pointerPos) => pointerOffsetRef.current = pointerPos
-  };
-  function getScrollPosition(pointerPos, dir) {
-    return getScrollPositionFromPointer(pointerPos, pointerOffsetRef.current, sizes, dir);
-  }
-  if (orientation === "horizontal") {
-    return /* @__PURE__ */ jsx(
-      ScrollAreaScrollbarX,
-      {
-        ...commonProps,
-        ref: forwardedRef,
-        onThumbPositionChange: () => {
-          if (context.viewport && thumbRef.current) {
-            const scrollPos = context.viewport.scrollLeft;
-            const offset = getThumbOffsetFromScroll(scrollPos, sizes, context.dir);
-            thumbRef.current.style.transform = `translate3d(${offset}px, 0, 0)`;
-          }
-        },
-        onWheelScroll: (scrollPos) => {
-          if (context.viewport) context.viewport.scrollLeft = scrollPos;
-        },
-        onDragScroll: (pointerPos) => {
-          if (context.viewport) {
-            context.viewport.scrollLeft = getScrollPosition(pointerPos, context.dir);
-          }
-        }
-      }
-    );
-  }
-  if (orientation === "vertical") {
-    return /* @__PURE__ */ jsx(
-      ScrollAreaScrollbarY,
-      {
-        ...commonProps,
-        ref: forwardedRef,
-        onThumbPositionChange: () => {
-          if (context.viewport && thumbRef.current) {
-            const scrollPos = context.viewport.scrollTop;
-            const offset = getThumbOffsetFromScroll(scrollPos, sizes);
-            thumbRef.current.style.transform = `translate3d(0, ${offset}px, 0)`;
-          }
-        },
-        onWheelScroll: (scrollPos) => {
-          if (context.viewport) context.viewport.scrollTop = scrollPos;
-        },
-        onDragScroll: (pointerPos) => {
-          if (context.viewport) context.viewport.scrollTop = getScrollPosition(pointerPos);
-        }
-      }
-    );
-  }
-  return null;
-});
-var ScrollAreaScrollbarX = React.forwardRef((props, forwardedRef) => {
-  const { sizes, onSizesChange, ...scrollbarProps } = props;
-  const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
-  const [computedStyle, setComputedStyle] = React.useState();
-  const ref = React.useRef(null);
-  const composeRefs = useComposedRefs(forwardedRef, ref, context.onScrollbarXChange);
-  React.useEffect(() => {
-    if (ref.current) setComputedStyle(getComputedStyle(ref.current));
-  }, [ref]);
-  return /* @__PURE__ */ jsx(
-    ScrollAreaScrollbarImpl,
-    {
-      "data-orientation": "horizontal",
-      ...scrollbarProps,
-      ref: composeRefs,
-      sizes,
-      style: {
-        bottom: 0,
-        left: context.dir === "rtl" ? "var(--radix-scroll-area-corner-width)" : 0,
-        right: context.dir === "ltr" ? "var(--radix-scroll-area-corner-width)" : 0,
-        ["--radix-scroll-area-thumb-width"]: getThumbSize(sizes) + "px",
-        ...props.style
-      },
-      onThumbPointerDown: (pointerPos) => props.onThumbPointerDown(pointerPos.x),
-      onDragScroll: (pointerPos) => props.onDragScroll(pointerPos.x),
-      onWheelScroll: (event, maxScrollPos) => {
-        if (context.viewport) {
-          const scrollPos = context.viewport.scrollLeft + event.deltaX;
-          props.onWheelScroll(scrollPos);
-          if (isScrollingWithinScrollbarBounds(scrollPos, maxScrollPos)) {
-            event.preventDefault();
-          }
-        }
-      },
-      onResize: () => {
-        if (ref.current && context.viewport && computedStyle) {
-          onSizesChange({
-            content: context.viewport.scrollWidth,
-            viewport: context.viewport.offsetWidth,
-            scrollbar: {
-              size: ref.current.clientWidth,
-              paddingStart: toInt(computedStyle.paddingLeft),
-              paddingEnd: toInt(computedStyle.paddingRight)
-            }
-          });
-        }
-      }
-    }
-  );
-});
-var ScrollAreaScrollbarY = React.forwardRef((props, forwardedRef) => {
-  const { sizes, onSizesChange, ...scrollbarProps } = props;
-  const context = useScrollAreaContext(SCROLLBAR_NAME, props.__scopeScrollArea);
-  const [computedStyle, setComputedStyle] = React.useState();
-  const ref = React.useRef(null);
-  const composeRefs = useComposedRefs(forwardedRef, ref, context.onScrollbarYChange);
-  React.useEffect(() => {
-    if (ref.current) setComputedStyle(getComputedStyle(ref.current));
-  }, [ref]);
-  return /* @__PURE__ */ jsx(
-    ScrollAreaScrollbarImpl,
-    {
-      "data-orientation": "vertical",
-      ...scrollbarProps,
-      ref: composeRefs,
-      sizes,
-      style: {
-        top: 0,
-        right: context.dir === "ltr" ? 0 : void 0,
-        left: context.dir === "rtl" ? 0 : void 0,
-        bottom: "var(--radix-scroll-area-corner-height)",
-        ["--radix-scroll-area-thumb-height"]: getThumbSize(sizes) + "px",
-        ...props.style
-      },
-      onThumbPointerDown: (pointerPos) => props.onThumbPointerDown(pointerPos.y),
-      onDragScroll: (pointerPos) => props.onDragScroll(pointerPos.y),
-      onWheelScroll: (event, maxScrollPos) => {
-        if (context.viewport) {
-          const scrollPos = context.viewport.scrollTop + event.deltaY;
-          props.onWheelScroll(scrollPos);
-          if (isScrollingWithinScrollbarBounds(scrollPos, maxScrollPos)) {
-            event.preventDefault();
-          }
-        }
-      },
-      onResize: () => {
-        if (ref.current && context.viewport && computedStyle) {
-          onSizesChange({
-            content: context.viewport.scrollHeight,
-            viewport: context.viewport.offsetHeight,
-            scrollbar: {
-              size: ref.current.clientHeight,
-              paddingStart: toInt(computedStyle.paddingTop),
-              paddingEnd: toInt(computedStyle.paddingBottom)
-            }
-          });
-        }
-      }
-    }
-  );
-});
-var [ScrollbarProvider, useScrollbarContext] = createScrollAreaContext(SCROLLBAR_NAME);
-var ScrollAreaScrollbarImpl = React.forwardRef((props, forwardedRef) => {
-  const {
-    __scopeScrollArea,
-    sizes,
-    hasThumb,
-    onThumbChange,
-    onThumbPointerUp,
-    onThumbPointerDown,
-    onThumbPositionChange,
-    onDragScroll,
-    onWheelScroll,
-    onResize,
-    ...scrollbarProps
-  } = props;
-  const context = useScrollAreaContext(SCROLLBAR_NAME, __scopeScrollArea);
-  const [scrollbar, setScrollbar] = React.useState(null);
-  const composeRefs = useComposedRefs(forwardedRef, (node) => setScrollbar(node));
-  const rectRef = React.useRef(null);
-  const prevWebkitUserSelectRef = React.useRef("");
-  const viewport = context.viewport;
-  const maxScrollPos = sizes.content - sizes.viewport;
-  const handleWheelScroll = useCallbackRef$1(onWheelScroll);
-  const handleThumbPositionChange = useCallbackRef$1(onThumbPositionChange);
-  const handleResize = useDebounceCallback(onResize, 10);
-  function handleDragScroll(event) {
-    if (rectRef.current) {
-      const x = event.clientX - rectRef.current.left;
-      const y = event.clientY - rectRef.current.top;
-      onDragScroll({ x, y });
-    }
-  }
-  React.useEffect(() => {
-    const handleWheel = (event) => {
-      const element = event.target;
-      const isScrollbarWheel = scrollbar?.contains(element);
-      if (isScrollbarWheel) handleWheelScroll(event, maxScrollPos);
-    };
-    document.addEventListener("wheel", handleWheel, { passive: false });
-    return () => document.removeEventListener("wheel", handleWheel, { passive: false });
-  }, [viewport, scrollbar, maxScrollPos, handleWheelScroll]);
-  React.useEffect(handleThumbPositionChange, [sizes, handleThumbPositionChange]);
-  useResizeObserver(scrollbar, handleResize);
-  useResizeObserver(context.content, handleResize);
-  return /* @__PURE__ */ jsx(
-    ScrollbarProvider,
-    {
-      scope: __scopeScrollArea,
-      scrollbar,
-      hasThumb,
-      onThumbChange: useCallbackRef$1(onThumbChange),
-      onThumbPointerUp: useCallbackRef$1(onThumbPointerUp),
-      onThumbPositionChange: handleThumbPositionChange,
-      onThumbPointerDown: useCallbackRef$1(onThumbPointerDown),
-      children: /* @__PURE__ */ jsx(
-        Primitive.div,
-        {
-          ...scrollbarProps,
-          ref: composeRefs,
-          style: { position: "absolute", ...scrollbarProps.style },
-          onPointerDown: composeEventHandlers(props.onPointerDown, (event) => {
-            const mainPointer = 0;
-            if (event.button === mainPointer) {
-              const element = event.target;
-              element.setPointerCapture(event.pointerId);
-              rectRef.current = scrollbar.getBoundingClientRect();
-              prevWebkitUserSelectRef.current = document.body.style.webkitUserSelect;
-              document.body.style.webkitUserSelect = "none";
-              if (context.viewport) context.viewport.style.scrollBehavior = "auto";
-              handleDragScroll(event);
-            }
-          }),
-          onPointerMove: composeEventHandlers(props.onPointerMove, handleDragScroll),
-          onPointerUp: composeEventHandlers(props.onPointerUp, (event) => {
-            const element = event.target;
-            if (element.hasPointerCapture(event.pointerId)) {
-              element.releasePointerCapture(event.pointerId);
-            }
-            document.body.style.webkitUserSelect = prevWebkitUserSelectRef.current;
-            if (context.viewport) context.viewport.style.scrollBehavior = "";
-            rectRef.current = null;
-          })
-        }
-      )
-    }
-  );
-});
-var THUMB_NAME$2 = "ScrollAreaThumb";
-var ScrollAreaThumb = React.forwardRef(
-  (props, forwardedRef) => {
-    const { forceMount, ...thumbProps } = props;
-    const scrollbarContext = useScrollbarContext(THUMB_NAME$2, props.__scopeScrollArea);
-    return /* @__PURE__ */ jsx(Presence, { present: forceMount || scrollbarContext.hasThumb, children: /* @__PURE__ */ jsx(ScrollAreaThumbImpl, { ref: forwardedRef, ...thumbProps }) });
-  }
-);
-var ScrollAreaThumbImpl = React.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeScrollArea, style, ...thumbProps } = props;
-    const scrollAreaContext = useScrollAreaContext(THUMB_NAME$2, __scopeScrollArea);
-    const scrollbarContext = useScrollbarContext(THUMB_NAME$2, __scopeScrollArea);
-    const { onThumbPositionChange } = scrollbarContext;
-    const composedRef = useComposedRefs(
-      forwardedRef,
-      (node) => scrollbarContext.onThumbChange(node)
-    );
-    const removeUnlinkedScrollListenerRef = React.useRef(void 0);
-    const debounceScrollEnd = useDebounceCallback(() => {
-      if (removeUnlinkedScrollListenerRef.current) {
-        removeUnlinkedScrollListenerRef.current();
-        removeUnlinkedScrollListenerRef.current = void 0;
-      }
-    }, 100);
-    React.useEffect(() => {
-      const viewport = scrollAreaContext.viewport;
-      if (viewport) {
-        const handleScroll = () => {
-          debounceScrollEnd();
-          if (!removeUnlinkedScrollListenerRef.current) {
-            const listener = addUnlinkedScrollListener(viewport, onThumbPositionChange);
-            removeUnlinkedScrollListenerRef.current = listener;
-            onThumbPositionChange();
-          }
-        };
-        onThumbPositionChange();
-        viewport.addEventListener("scroll", handleScroll);
-        return () => viewport.removeEventListener("scroll", handleScroll);
-      }
-    }, [scrollAreaContext.viewport, debounceScrollEnd, onThumbPositionChange]);
-    return /* @__PURE__ */ jsx(
-      Primitive.div,
-      {
-        "data-state": scrollbarContext.hasThumb ? "visible" : "hidden",
-        ...thumbProps,
-        ref: composedRef,
-        style: {
-          width: "var(--radix-scroll-area-thumb-width)",
-          height: "var(--radix-scroll-area-thumb-height)",
-          ...style
-        },
-        onPointerDownCapture: composeEventHandlers(props.onPointerDownCapture, (event) => {
-          const thumb = event.target;
-          const thumbRect = thumb.getBoundingClientRect();
-          const x = event.clientX - thumbRect.left;
-          const y = event.clientY - thumbRect.top;
-          scrollbarContext.onThumbPointerDown({ x, y });
-        }),
-        onPointerUp: composeEventHandlers(props.onPointerUp, scrollbarContext.onThumbPointerUp)
-      }
-    );
-  }
-);
-ScrollAreaThumb.displayName = THUMB_NAME$2;
-var CORNER_NAME = "ScrollAreaCorner";
-var ScrollAreaCorner = React.forwardRef(
-  (props, forwardedRef) => {
-    const context = useScrollAreaContext(CORNER_NAME, props.__scopeScrollArea);
-    const hasBothScrollbarsVisible = Boolean(context.scrollbarX && context.scrollbarY);
-    const hasCorner = context.type !== "scroll" && hasBothScrollbarsVisible;
-    return hasCorner ? /* @__PURE__ */ jsx(ScrollAreaCornerImpl, { ...props, ref: forwardedRef }) : null;
-  }
-);
-ScrollAreaCorner.displayName = CORNER_NAME;
-var ScrollAreaCornerImpl = React.forwardRef((props, forwardedRef) => {
-  const { __scopeScrollArea, ...cornerProps } = props;
-  const context = useScrollAreaContext(CORNER_NAME, __scopeScrollArea);
-  const [width, setWidth] = React.useState(0);
-  const [height, setHeight] = React.useState(0);
-  const hasSize = Boolean(width && height);
-  useResizeObserver(context.scrollbarX, () => {
-    const height2 = context.scrollbarX?.offsetHeight || 0;
-    context.onCornerHeightChange(height2);
-    setHeight(height2);
-  });
-  useResizeObserver(context.scrollbarY, () => {
-    const width2 = context.scrollbarY?.offsetWidth || 0;
-    context.onCornerWidthChange(width2);
-    setWidth(width2);
-  });
-  return hasSize ? /* @__PURE__ */ jsx(
-    Primitive.div,
-    {
-      ...cornerProps,
-      ref: forwardedRef,
-      style: {
-        width,
-        height,
-        position: "absolute",
-        right: context.dir === "ltr" ? 0 : void 0,
-        left: context.dir === "rtl" ? 0 : void 0,
-        bottom: 0,
-        ...props.style
-      }
-    }
-  ) : null;
-});
-function toInt(value) {
-  return value ? parseInt(value, 10) : 0;
-}
-function getThumbRatio(viewportSize, contentSize) {
-  const ratio = viewportSize / contentSize;
-  return isNaN(ratio) ? 0 : ratio;
-}
-function getThumbSize(sizes) {
-  const ratio = getThumbRatio(sizes.viewport, sizes.content);
-  const scrollbarPadding = sizes.scrollbar.paddingStart + sizes.scrollbar.paddingEnd;
-  const thumbSize = (sizes.scrollbar.size - scrollbarPadding) * ratio;
-  return Math.max(thumbSize, 18);
-}
-function getScrollPositionFromPointer(pointerPos, pointerOffset, sizes, dir = "ltr") {
-  const thumbSizePx = getThumbSize(sizes);
-  const thumbCenter = thumbSizePx / 2;
-  const offset = pointerOffset || thumbCenter;
-  const thumbOffsetFromEnd = thumbSizePx - offset;
-  const minPointerPos = sizes.scrollbar.paddingStart + offset;
-  const maxPointerPos = sizes.scrollbar.size - sizes.scrollbar.paddingEnd - thumbOffsetFromEnd;
-  const maxScrollPos = sizes.content - sizes.viewport;
-  const scrollRange = dir === "ltr" ? [0, maxScrollPos] : [maxScrollPos * -1, 0];
-  const interpolate = linearScale$1([minPointerPos, maxPointerPos], scrollRange);
-  return interpolate(pointerPos);
-}
-function getThumbOffsetFromScroll(scrollPos, sizes, dir = "ltr") {
-  const thumbSizePx = getThumbSize(sizes);
-  const scrollbarPadding = sizes.scrollbar.paddingStart + sizes.scrollbar.paddingEnd;
-  const scrollbar = sizes.scrollbar.size - scrollbarPadding;
-  const maxScrollPos = sizes.content - sizes.viewport;
-  const maxThumbPos = scrollbar - thumbSizePx;
-  const scrollClampRange = dir === "ltr" ? [0, maxScrollPos] : [maxScrollPos * -1, 0];
-  const scrollWithoutMomentum = clamp$1(scrollPos, scrollClampRange);
-  const interpolate = linearScale$1([0, maxScrollPos], [0, maxThumbPos]);
-  return interpolate(scrollWithoutMomentum);
-}
-function linearScale$1(input, output) {
-  return (value) => {
-    if (input[0] === input[1] || output[0] === output[1]) return output[0];
-    const ratio = (output[1] - output[0]) / (input[1] - input[0]);
-    return output[0] + ratio * (value - input[0]);
-  };
-}
-function isScrollingWithinScrollbarBounds(scrollPos, maxScrollPos) {
-  return scrollPos > 0 && scrollPos < maxScrollPos;
-}
-var addUnlinkedScrollListener = (node, handler = () => {
-}) => {
-  let prevPosition = { left: node.scrollLeft, top: node.scrollTop };
-  let rAF = 0;
-  (function loop() {
-    const position = { left: node.scrollLeft, top: node.scrollTop };
-    const isHorizontalScroll = prevPosition.left !== position.left;
-    const isVerticalScroll = prevPosition.top !== position.top;
-    if (isHorizontalScroll || isVerticalScroll) handler();
-    prevPosition = position;
-    rAF = window.requestAnimationFrame(loop);
-  })();
-  return () => window.cancelAnimationFrame(rAF);
-};
-function useDebounceCallback(callback, delay) {
-  const handleCallback = useCallbackRef$1(callback);
-  const debounceTimerRef = React.useRef(0);
-  React.useEffect(() => () => window.clearTimeout(debounceTimerRef.current), []);
-  return React.useCallback(() => {
-    window.clearTimeout(debounceTimerRef.current);
-    debounceTimerRef.current = window.setTimeout(handleCallback, delay);
-  }, [handleCallback, delay]);
-}
-function useResizeObserver(element, onResize) {
-  const handleResize = useCallbackRef$1(onResize);
-  useLayoutEffect2(() => {
-    let rAF = 0;
-    if (element) {
-      const resizeObserver = new ResizeObserver(() => {
-        cancelAnimationFrame(rAF);
-        rAF = window.requestAnimationFrame(handleResize);
-      });
-      resizeObserver.observe(element);
-      return () => {
-        window.cancelAnimationFrame(rAF);
-        resizeObserver.unobserve(element);
-      };
-    }
-  }, [element, handleResize]);
-}
-var Root$8 = ScrollArea$3;
-var Viewport$1 = ScrollAreaViewport;
-var Corner = ScrollAreaCorner;
-
-const ScrollArea$2 = /*#__PURE__*/React.forwardRef((_a, ref) => {
-  var {
-      className,
-      children
-    } = _a,
-    props = __rest(_a, ["className", "children"]);
-  return /*#__PURE__*/React.createElement(Root$8, _extends({
-    ref: ref,
-    className: cn("relative overflow-hidden", className)
-  }, props), /*#__PURE__*/React.createElement(Viewport$1, {
-    className: "h-full w-full rounded-[inherit]"
-  }, children), /*#__PURE__*/React.createElement(ScrollBar$1, null), /*#__PURE__*/React.createElement(Corner, null));
-});
-ScrollArea$2.displayName = Root$8.displayName;
-const ScrollBar$1 = /*#__PURE__*/React.forwardRef((_a, ref) => {
-  var {
-      className,
-      orientation = "vertical"
-    } = _a,
-    props = __rest(_a, ["className", "orientation"]);
-  return /*#__PURE__*/React.createElement(ScrollAreaScrollbar, _extends({
-    ref: ref,
-    orientation: orientation,
-    className: cn("flex touch-none select-none transition-colors", orientation === "vertical" && "h-full w-2.5 border-l border-l-transparent p-[1px]", orientation === "horizontal" && "h-2.5 flex-col border-t border-t-transparent p-[1px]", className)
-  }, props), /*#__PURE__*/React.createElement(ScrollAreaThumb, {
-    className: "relative flex-1 rounded-full bg-border"
-  }));
-});
-ScrollBar$1.displayName = ScrollAreaScrollbar.displayName;
-
-const buttonVariants = cva("inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0", {
-  variants: {
-    variant: {
-      default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
-      destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
-      outline: "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
-      secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-      ghost: "hover:bg-accent hover:text-accent-foreground",
-      link: "text-primary underline-offset-4 hover:underline"
-    },
-    size: {
-      default: "h-9 px-4 py-2",
-      sm: "h-8 rounded-md px-3 text-xs",
-      lg: "h-10 rounded-md px-8",
-      icon: "h-9 w-9"
-    }
-  },
-  defaultVariants: {
-    variant: "default",
-    size: "default"
-  }
-});
-const Button$1 = /*#__PURE__*/React.forwardRef((_a, ref) => {
-  var {
-      className,
-      variant,
-      size,
-      asChild = false
-    } = _a,
-    props = __rest(_a, ["className", "variant", "size", "asChild"]);
-  const Comp = asChild ? Slot : "button";
-  return /*#__PURE__*/React.createElement(Comp, _extends({
-    className: cn(buttonVariants({
-      variant,
-      size,
-      className
-    })),
-    ref: ref
-  }, props));
-});
-Button$1.displayName = "Button";
-
-const Input = /*#__PURE__*/React.forwardRef((_a, ref) => {
-  var {
-      className,
-      type
-    } = _a,
-    props = __rest(_a, ["className", "type"]);
-  return /*#__PURE__*/React.createElement("input", _extends({
-    type: type,
-    className: cn("flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm", className),
-    ref: ref
-  }, props));
-});
-Input.displayName = "Input";
-
 const MicAnimation = ({
   isRecording
 }) => {
@@ -16930,7 +14854,7 @@ const SpeechToText = ({
       duration: 0.3
     },
     className: "w-1/2"
-  }, /*#__PURE__*/React__default.createElement(Button$1, {
+  }, /*#__PURE__*/React__default.createElement(Button$2, {
     onClick: () => stopRecording(false),
     className: "w-full h-12 rounded-full flex items-center justify-center bg-destructive hover:bg-destructive/90 dark:bg-destructive dark:hover:bg-destructive/90",
     "aria-label": "Cancel recording"
@@ -16954,7 +14878,7 @@ const SpeechToText = ({
       duration: 0.3
     },
     className: "w-1/2"
-  }, /*#__PURE__*/React__default.createElement(Button$1, {
+  }, /*#__PURE__*/React__default.createElement(Button$2, {
     onClick: () => stopRecording(true),
     className: "w-full h-12 rounded-full flex items-center justify-center bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90",
     "aria-label": "Stop recording"
@@ -16978,7 +14902,7 @@ const SpeechToText = ({
       duration: 0.3
     },
     className: "w-full"
-  }, /*#__PURE__*/React__default.createElement(Button$1, {
+  }, /*#__PURE__*/React__default.createElement(Button$2, {
     onClick: startRecording,
     className: "w-full h-12 rounded-full flex items-center justify-center bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90",
     "aria-label": "Start recording"
@@ -24815,7 +22739,7 @@ const Chat = ({
         className: "max-w-[70%] p-3 rounded-2xl bg-secondary text-secondary-foreground shadow-sm"
       }, agentMessage.content, /*#__PURE__*/React__default.createElement("div", {
         className: "mt-2 flex justify-end"
-      }, /*#__PURE__*/React__default.createElement(Button$1, {
+      }, /*#__PURE__*/React__default.createElement(Button$2, {
         size: "sm",
         variant: "outline",
         className: "rounded-xl px-2 py-1",
@@ -24856,7 +22780,7 @@ const Chat = ({
         onSendTextMessage();
       }
     }
-  }), /*#__PURE__*/React__default.createElement(Button$1, {
+  }), /*#__PURE__*/React__default.createElement(Button$2, {
     onClick: onSendTextMessage,
     size: "icon",
     className: "rounded-2xl bg-primary-foreground text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
@@ -24877,7 +22801,9 @@ const SandboxContext = /*#__PURE__*/createContext({
 });
 // Create a provider component for the Sandbox
 const SandboxProvider$1 = ({
-  children
+  children,
+  gameState,
+  desc
 }) => {
   const componentRef = useRef(null);
   const setComponentRef = ref => {
@@ -24888,9 +22814,6 @@ const SandboxProvider$1 = ({
     addToChat,
     isConnected
   } = useWebSocketLogger();
-  const {
-    gameState
-  } = useGameState();
   const getBackgroundImage = () => {
     return 'https://mathtutor-images.s3.us-east-1.amazonaws.com/generated-images/generated_image_20241203_010231.png';
   };
@@ -24959,7 +22882,7 @@ const SandboxProvider$1 = ({
     className: "relative h-full w-full flex flex-col"
   }, /*#__PURE__*/React__default.createElement("div", {
     className: "p-2"
-  }, /*#__PURE__*/React__default.createElement(Button$1, {
+  }, /*#__PURE__*/React__default.createElement(Button$2, {
     variant: "outline",
     onClick: handleReloadPage,
     className: "hover:bg-gray-100 text-foreground px-4 py-2 flex items-center gap-2",
@@ -24993,11 +22916,16 @@ const useSandboxContext$1 = () => {
 const LiorGameContext = /*#__PURE__*/createContext(undefined);
 const LiorGameProvider$1 = ({
   children,
-  wsUrl = `${process.env.NEXT_PUBLIC_WS_BASE_URL}/superartifacts/ws`
+  wsUrl = `${process.env.NEXT_PUBLIC_WS_BASE_URL}/superartifacts/ws`,
+  gameState,
+  desc
 }) => {
   return /*#__PURE__*/React__default.createElement(MessageProvider, null, /*#__PURE__*/React__default.createElement(WebSocketProvider, {
     url: wsUrl
-  }, /*#__PURE__*/React__default.createElement(SandboxProvider$1, null, children)));
+  }, /*#__PURE__*/React__default.createElement(SandboxProvider$1, {
+    gameState: gameState,
+    desc: desc
+  }, children)));
 };
 const useLiorGame$1 = () => {
   const context = useContext(LiorGameContext);
@@ -25006,6 +22934,182 @@ const useLiorGame$1 = () => {
   }
   return context;
 };
+
+const withEventLogging = WrappedComponent => {
+  const WithEventLogging = props => {
+    const messageContext = useContext(MessageContext);
+    const {
+      sendLog
+    } = useWebSocketLogger();
+    // Create a stable log message creator
+    const createLogMessage = useCallback((event, target, value) => {
+      return Object.assign({
+        messageId: crypto.randomUUID(),
+        isPlaying: false,
+        timestamp: new Date().toISOString(),
+        componentName: WrappedComponent.displayName || WrappedComponent.name || 'UnnamedComponent',
+        event,
+        id: target.getAttribute('id')
+      }, value && {
+        value
+      });
+    }, []);
+    // Helper function to create a LogMessage with type 'log'
+    const createLogMessageWithLogType = message => Object.assign(Object.assign({}, message), {
+      type: 'log'
+    });
+    // Memoize the event wrapper creators
+    const wrapClickHandler = useCallback(handler => {
+      return event => {
+        const logMessage = createLogMessageWithLogType(createLogMessage('click', event.currentTarget));
+        // messageContext?.setMessages(prev => [...prev, logMessage]);
+        sendLog(logMessage);
+        handler === null || handler === void 0 ? void 0 : handler(event);
+      };
+    }, [messageContext, createLogMessage, sendLog]);
+    const wrapChangeHandler = useCallback(handler => {
+      return event => {
+        const logMessage = createLogMessageWithLogType(createLogMessage('change', event.currentTarget, event.currentTarget.value));
+        // messageContext?.setMessages(prev => [...prev, logMessage]);
+        sendLog(logMessage);
+        handler === null || handler === void 0 ? void 0 : handler(event);
+      };
+    }, [messageContext, createLogMessage, sendLog]);
+    // Memoize the wrapped handlers
+    const wrappedHandlers = useMemo(() => {
+      const newProps = {};
+      Object.entries(props).forEach(([key, value]) => {
+        if (typeof value === 'function') {
+          if (key.toLowerCase().includes('click')) {
+            newProps[key] = wrapClickHandler(value);
+          } else if (key.toLowerCase().includes('change')) {
+            newProps[key] = wrapChangeHandler(value);
+          } else {
+            newProps[key] = value;
+          }
+        } else {
+          newProps[key] = value;
+        }
+      });
+      return newProps;
+    }, [props, wrapClickHandler, wrapChangeHandler]);
+    return /*#__PURE__*/React__default.createElement(WrappedComponent, wrappedHandlers);
+  };
+  // Optimize the display name for debugging
+  WithEventLogging.displayName = `WithEventLogging(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+  // No need for an additional React.memo here since we're already memoizing properly
+  return WithEventLogging;
+};
+
+const buttonVariants = cva("inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0", {
+  variants: {
+    variant: {
+      default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+      destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+      outline: "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+      secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+      ghost: "hover:bg-accent hover:text-accent-foreground",
+      link: "text-primary underline-offset-4 hover:underline"
+    },
+    size: {
+      default: "h-9 px-4 py-2",
+      sm: "h-8 rounded-md px-3 text-xs",
+      lg: "h-10 rounded-md px-8",
+      icon: "h-9 w-9"
+    }
+  },
+  defaultVariants: {
+    variant: "default",
+    size: "default"
+  }
+});
+const MyButton = /*#__PURE__*/React.forwardRef((_a, ref) => {
+  var {
+      className,
+      variant,
+      size,
+      asChild = false
+    } = _a,
+    props = __rest(_a, ["className", "variant", "size", "asChild"]);
+  const Comp = asChild ? Slot : "button";
+  return /*#__PURE__*/React.createElement(Comp, _extends({
+    className: cn(buttonVariants({
+      variant,
+      size,
+      className
+    })),
+    ref: ref
+  }, props));
+});
+MyButton.displayName = "Button";
+const Button$1 = withEventLogging(MyButton);
+
+const Card$1 = /*#__PURE__*/React.forwardRef((_a, ref) => {
+  var {
+      className
+    } = _a,
+    props = __rest(_a, ["className"]);
+  return /*#__PURE__*/React.createElement("div", _extends({
+    ref: ref,
+    className: cn("rounded-xl border bg-card text-card-foreground shadow", className)
+  }, props));
+});
+Card$1.displayName = "Card";
+const CardHeader = /*#__PURE__*/React.forwardRef((_a, ref) => {
+  var {
+      className
+    } = _a,
+    props = __rest(_a, ["className"]);
+  return /*#__PURE__*/React.createElement("div", _extends({
+    ref: ref,
+    className: cn("flex flex-col space-y-1.5 p-6", className)
+  }, props));
+});
+CardHeader.displayName = "CardHeader";
+const CardTitle = /*#__PURE__*/React.forwardRef((_a, ref) => {
+  var {
+      className
+    } = _a,
+    props = __rest(_a, ["className"]);
+  return /*#__PURE__*/React.createElement("div", _extends({
+    ref: ref,
+    className: cn("font-semibold leading-none tracking-tight", className)
+  }, props));
+});
+CardTitle.displayName = "CardTitle";
+const CardDescription = /*#__PURE__*/React.forwardRef((_a, ref) => {
+  var {
+      className
+    } = _a,
+    props = __rest(_a, ["className"]);
+  return /*#__PURE__*/React.createElement("div", _extends({
+    ref: ref,
+    className: cn("text-sm text-muted-foreground", className)
+  }, props));
+});
+CardDescription.displayName = "CardDescription";
+const CardContent = /*#__PURE__*/React.forwardRef((_a, ref) => {
+  var {
+      className
+    } = _a,
+    props = __rest(_a, ["className"]);
+  return /*#__PURE__*/React.createElement("div", _extends({
+    ref: ref,
+    className: cn("p-6 pt-0", className)
+  }, props));
+});
+CardContent.displayName = "CardContent";
+const CardFooter = /*#__PURE__*/React.forwardRef((_a, ref) => {
+  var {
+      className
+    } = _a,
+    props = __rest(_a, ["className"]);
+  return /*#__PURE__*/React.createElement("div", _extends({
+    ref: ref,
+    className: cn("flex items-center p-6 pt-0", className)
+  }, props));
+});
+CardFooter.displayName = "CardFooter";
 
 // packages/react/use-controllable-state/src/useControllableState.tsx
 function useControllableState({
@@ -25222,7 +23326,7 @@ var Slider$2 = React.forwardRef(
     function updateValues(value2, atIndex, { commit } = { commit: false }) {
       const decimalCount = getDecimalCount(step);
       const snapToStep = roundValue(Math.round((value2 - min) / step) * step + min, decimalCount);
-      const nextValue = clamp$1(snapToStep, [min, max]);
+      const nextValue = clamp$2(snapToStep, [min, max]);
       setValues((prevValues = []) => {
         const nextValues = getNextSortedValues(prevValues, nextValue, atIndex);
         if (hasMinStepsBetweenValues(nextValues, minStepsBetweenThumbs * step)) {
@@ -25632,7 +23736,7 @@ function convertValueToPercentage(value, min, max) {
   const maxSteps = max - min;
   const percentPerStep = 100 / maxSteps;
   const percentage = percentPerStep * (value - min);
-  return clamp$1(percentage, [0, 100]);
+  return clamp$2(percentage, [0, 100]);
 }
 function getLabel(index, totalValues) {
   if (totalValues > 2) {
@@ -30178,7 +28282,7 @@ var SelectItemAlignedPosition = React.forwardRef((props, forwardedRef) => {
         const minContentWidth = triggerRect.width + leftDelta;
         const contentWidth = Math.max(minContentWidth, contentRect.width);
         const rightEdge = window.innerWidth - CONTENT_MARGIN;
-        const clampedLeft = clamp$1(left, [
+        const clampedLeft = clamp$2(left, [
           CONTENT_MARGIN,
           // Prevents the content from going off the starting edge of the
           // viewport. It may still go off the ending edge, but this can be
@@ -30196,7 +28300,7 @@ var SelectItemAlignedPosition = React.forwardRef((props, forwardedRef) => {
         const minContentWidth = triggerRect.width + rightDelta;
         const contentWidth = Math.max(minContentWidth, contentRect.width);
         const leftEdge = window.innerWidth - CONTENT_MARGIN;
-        const clampedRight = clamp$1(right, [
+        const clampedRight = clamp$2(right, [
           CONTENT_MARGIN,
           Math.max(CONTENT_MARGIN, leftEdge - contentWidth)
         ]);
@@ -33169,7 +31273,7 @@ const Label$1 = withEventLogging(MyLabel);
 var CustomUI = /*#__PURE__*/Object.freeze({
   __proto__: null,
   Accordion: Accordion$1,
-  Button: Button$2,
+  Button: Button$1,
   Card: Card$1,
   DropdownMenu: DropdownMenu$1,
   Label: Label$1,
@@ -33181,6 +31285,67 @@ var CustomUI = /*#__PURE__*/Object.freeze({
   Toggle: Toggle$2,
   ToggleGroup: ToggleGroup$1
 });
+
+// Expanded and more diverse emoji list
+const celebrationEmojis = ['🎉', '🎊', '🎈', '🥳', '✨', '🚀', '💥', '🌟', '🏆'];
+const SuccessAnimation$1 = () => {
+  // Set the state with the defined type
+  const [emojis, setEmojis] = useState([]);
+  // Enhanced randomization functions
+  const getRandomEmoji = () => celebrationEmojis[Math.floor(Math.random() * celebrationEmojis.length)];
+  const getRandomPosition = () => ({
+    x: Math.random() * window.innerWidth,
+    delay: Math.random() * 1,
+    duration: Math.random() * 3 + 2
+  });
+  // Continuous emoji generation with staggered approach
+  useEffect(() => {
+    const generateNewEmoji = () => {
+      const newEmoji = Object.assign({
+        id: Date.now(),
+        emoji: getRandomEmoji()
+      }, getRandomPosition());
+      setEmojis(prevEmojis => {
+        // Keep a maximum of 100 emojis to prevent performance issues
+        const updatedEmojis = [...prevEmojis, newEmoji];
+        return updatedEmojis.slice(-40);
+      });
+    };
+    const interval = setInterval(generateNewEmoji, 50);
+    const timeout = setTimeout(() => clearInterval(interval), 5000); // Stop after 5 seconds
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, []);
+  return /*#__PURE__*/React__default.createElement("div", {
+    className: "fixed inset-0 pointer-events-none z-50 overflow-hidden"
+  }, /*#__PURE__*/React__default.createElement(AnimatePresence, null, emojis.map(emojiObj => /*#__PURE__*/React__default.createElement(motion.div, {
+    key: emojiObj.id,
+    initial: {
+      y: -100,
+      x: emojiObj.x,
+      opacity: 1
+    },
+    animate: {
+      y: window.innerHeight + 100,
+      opacity: [1, 1, 0],
+      x: emojiObj.x + (Math.random() * 100 - 50)
+    },
+    exit: {
+      opacity: 0
+    },
+    transition: {
+      duration: emojiObj.duration,
+      delay: emojiObj.delay,
+      ease: "easeInOut"
+    },
+    className: "absolute select-none text-4xl",
+    style: {
+      left: emojiObj.x
+    }
+  }, emojiObj.emoji))));
+};
 
 const SandboxProvider = SandboxProvider$1;
 const useSandboxContext = useSandboxContext$1;

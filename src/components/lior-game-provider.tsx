@@ -7,15 +7,19 @@ export const LiorGameContext = createContext<{} | undefined>(undefined);
 
 export const LiorGameProvider: React.FC<{ 
   children: ReactNode,
-  wsUrl?: string 
+  wsUrl?: string,
+  gameState: any,
+  desc: string
 }> = ({ 
   children, 
-  wsUrl = `${process.env.NEXT_PUBLIC_WS_BASE_URL}/superartifacts/ws`
+  wsUrl = `${process.env.NEXT_PUBLIC_WS_BASE_URL}/superartifacts/ws`,
+  gameState,
+  desc
 }) => {
   return (
     <MessageProvider>
       <WebSocketProvider url={wsUrl}>
-          <SandboxProvider>
+          <SandboxProvider gameState={gameState} desc={desc}>
             {children}
           </SandboxProvider>
       </WebSocketProvider>
