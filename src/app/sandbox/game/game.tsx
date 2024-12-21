@@ -1,5 +1,3 @@
-'use client';
-
 import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
 import { Card } from "@/components/custom_ui/card";
 import { Button } from '@/components/custom_ui/button';

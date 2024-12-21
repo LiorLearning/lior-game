@@ -1,5 +1,3 @@
-'use client'
-
 import React, { useContext, useRef, useState, useLayoutEffect } from 'react'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { 

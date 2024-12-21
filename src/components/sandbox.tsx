@@ -1,7 +1,5 @@
-'use client'
-
 import React, { createContext, useContext, useRef, useEffect, ReactNode } from 'react';
-import FractionsGame, { desc, useGameState } from '../app/sandbox/game/game';
+import { desc, useGameState } from '../app/sandbox/game/game';
 import Chat from "@/components/Chat";
 import { useWebSocketLogger } from '@/components/websocket';
 import { handleScreenshot } from '@/components/utils/screenshot';

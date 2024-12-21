@@ -1,5 +1,3 @@
-'use client';
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { MessageProvider } from '@/components/MessageContext';
 import { WebSocketProvider } from '@/components/websocket';
@@ -19,7 +17,9 @@ export const LiorGameProvider: React.FC<{
     <MessageProvider>
       <WebSocketProvider url={wsUrl}>
         <GameStateProvider>
-          {children}
+          <SandboxProvider>
+            {children}
+          </SandboxProvider>
         </GameStateProvider>
       </WebSocketProvider>
     </MessageProvider>
