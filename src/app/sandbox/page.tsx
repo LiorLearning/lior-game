@@ -2,15 +2,17 @@
 
 import { Suspense } from 'react';
 import { LiorGameProvider } from '@/components/lior-game-provider';
-import FractionsGame from './game/game';
+import FractionsGame, { GameStateProvider } from './game/game';
 import { useSandboxContext } from '@/components/sandbox';
 
 export default function Page() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <LiorGameProvider>
-        <FractionsGame sendAdminMessage={useSandboxContext().sendAdminMessage ?? ((role, content) => {})} />
-      </LiorGameProvider>
+      <GameStateProvider>
+        <LiorGameProvider>
+          <FractionsGame sendAdminMessage={useSandboxContext().sendAdminMessage ?? ((role, content) => {})} />
+        </LiorGameProvider>
+      </GameStateProvider>
     </Suspense>
   )
 }

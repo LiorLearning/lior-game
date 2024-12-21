@@ -15635,7 +15635,7 @@ function requireNavigation() {
   return navigation;
 }
 
-var navigationExports = requireNavigation();
+requireNavigation();
 
 const desc = `Steps to Play the Fraction Comparison Game:
 1. You'll start with two chocolate bars representing fraction1 and fration2.
@@ -15647,54 +15647,6 @@ const desc = `Steps to Play the Fraction Comparison Game:
 7. Your goal is to correctly identify which fraction has a greater value.`;
 // Create a context for the game state
 const GameStateContext = /*#__PURE__*/createContext(undefined);
-// Create a provider component for the game state
-const GameStateProvider = ({
-  children
-}) => {
-  const searchParams = navigationExports.useSearchParams();
-  const num1 = parseInt(searchParams.get('n1') || '1');
-  const denom1 = parseInt(searchParams.get('d1') || '2');
-  const num2 = parseInt(searchParams.get('n2') || '1');
-  const denom2 = parseInt(searchParams.get('d2') || '3');
-  const initialGameState = {
-    fraction1: {
-      num: num1,
-      denom: denom1
-    },
-    fraction2: {
-      num: num2,
-      denom: denom2
-    },
-    bar1: {
-      parts: 1,
-      selectedParts: []
-    },
-    bar2: {
-      parts: 1,
-      selectedParts: []
-    },
-    showAnswer: false,
-    userAnswer: null,
-    isFirstFractionCorrect: false,
-    isSecondFractionCorrect: false,
-    compareMode: false,
-    gameStarted: false,
-    correctAnswer: num1 * denom2 > num2 * denom1 ? {
-      num: num1,
-      denom: denom1
-    } : {
-      num: num2,
-      denom: denom2
-    }
-  };
-  const [gameState, setGameState] = useState(initialGameState);
-  return /*#__PURE__*/React__default.createElement(GameStateContext.Provider, {
-    value: {
-      gameState,
-      setGameState
-    }
-  }, children);
-};
 // Custom hook to use the game state context
 const useGameState = () => {
   const context = useContext(GameStateContext);
@@ -25045,7 +24997,7 @@ const LiorGameProvider$1 = ({
 }) => {
   return /*#__PURE__*/React__default.createElement(MessageProvider, null, /*#__PURE__*/React__default.createElement(WebSocketProvider, {
     url: wsUrl
-  }, /*#__PURE__*/React__default.createElement(GameStateProvider, null, /*#__PURE__*/React__default.createElement(SandboxProvider$1, null, children))));
+  }, /*#__PURE__*/React__default.createElement(SandboxProvider$1, null, children)));
 };
 const useLiorGame$1 = () => {
   const context = useContext(LiorGameContext);

@@ -1,7 +1,6 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { MessageProvider } from '@/components/MessageContext';
 import { WebSocketProvider } from '@/components/websocket';
-import { GameStateProvider } from '@/app/sandbox/game/game';
 import { SandboxProvider } from './sandbox';
 
 export const LiorGameContext = createContext<{} | undefined>(undefined);
@@ -16,11 +15,9 @@ export const LiorGameProvider: React.FC<{
   return (
     <MessageProvider>
       <WebSocketProvider url={wsUrl}>
-        <GameStateProvider>
           <SandboxProvider>
             {children}
           </SandboxProvider>
-        </GameStateProvider>
       </WebSocketProvider>
     </MessageProvider>
   );
