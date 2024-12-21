@@ -25,7 +25,10 @@ export default [
       external(),
       resolve(),
       commonjs(),
-      css(),
+      css({
+        output: 'dist/styles.css',
+        minimize: true
+      }),
       typescript({
         tsconfig: './tsconfig.json',
         sourceMap: true,

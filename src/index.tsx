@@ -1,4 +1,7 @@
 import React, { ReactNode } from 'react';
+
+import './app/globals.css';
+
 import { 
   SandboxProvider as SandboxProviderComponent, 
   useSandboxContext as useSandboxContextHook 

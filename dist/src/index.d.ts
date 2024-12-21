@@ -1,4 +1,5 @@
 import React, { ReactNode } from 'react';
+import './app/globals.css';
 import * as CustomUI from './components/custom_ui/index';
 export declare const SandboxProvider: (props: {
     children: ReactNode;
