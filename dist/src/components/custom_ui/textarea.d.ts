@@ -3,3 +3,4 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 }
 declare const Textarea: React.FC<TextareaProps & React.RefAttributes<HTMLTextAreaElement>>;
 export { Textarea };
+//# sourceMappingURL=textarea.d.ts.map

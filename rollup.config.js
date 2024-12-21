@@ -50,10 +50,8 @@ export default [
     plugins: [
       dts({
         compilerOptions: {
-          baseUrl: './src',
-          paths: {
-            "@/*": ["./*"]
-          }
+          declarationDir: 'dist',
+          rootDir: 'src'
         },
         respectExternal: true
       })

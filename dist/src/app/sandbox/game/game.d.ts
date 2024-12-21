@@ -34,3 +34,4 @@ interface FractionsGameProps {
 }
 declare const FractionsGame: ({ sendAdminMessage }: FractionsGameProps) => React.JSX.Element;
 export default FractionsGame;
+//# sourceMappingURL=game.d.ts.map

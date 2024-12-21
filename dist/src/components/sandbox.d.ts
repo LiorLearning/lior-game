@@ -8,3 +8,4 @@ export declare const useSandboxContext: () => {
     componentRef: React.RefObject<HTMLDivElement> | null;
     sendAdminMessage?: (role: string, content: string) => Promise<void>;
 };
+//# sourceMappingURL=sandbox.d.ts.map

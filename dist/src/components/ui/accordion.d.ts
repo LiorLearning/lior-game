@@ -5,3 +5,4 @@ declare const AccordionItem: React.ForwardRefExoticComponent<Omit<AccordionPrimi
 declare const AccordionTrigger: React.ForwardRefExoticComponent<Omit<AccordionPrimitive.AccordionTriggerProps & React.RefAttributes<HTMLButtonElement>, "ref"> & React.RefAttributes<HTMLButtonElement>>;
 declare const AccordionContent: React.ForwardRefExoticComponent<Omit<AccordionPrimitive.AccordionContentProps & React.RefAttributes<HTMLDivElement>, "ref"> & React.RefAttributes<HTMLDivElement>>;
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent };
+//# sourceMappingURL=accordion.d.ts.map

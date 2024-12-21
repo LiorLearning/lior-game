@@ -31367,10 +31367,13 @@ const SuccessAnimation$1 = () => {
   }, emojiObj.emoji))));
 };
 
-const SandboxProvider = SandboxProvider$1;
-const useSandboxContext = useSandboxContext$1;
-const LiorGameProvider = LiorGameProvider$1;
-const useLiorGame = useLiorGame$1;
+const SandboxProvider = props => /*#__PURE__*/React.createElement(SandboxProvider$1, props);
+const useSandboxContext = () => {
+  const context = useSandboxContext$1();
+  return context;
+};
+const LiorGameProvider = props => /*#__PURE__*/React.createElement(LiorGameProvider$1, props);
+const useLiorGame = () => useLiorGame$1();
 const {
   Button,
   Card,

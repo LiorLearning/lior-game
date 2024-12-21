@@ -5,3 +5,4 @@ interface SpeechToTextProps {
 }
 declare const SpeechToText: React.FC<SpeechToTextProps>;
 export default SpeechToText;
+//# sourceMappingURL=speech_to_text.d.ts.map

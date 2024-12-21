@@ -15,3 +15,4 @@ export declare const useWebSocketLogger: () => WebSocketContextType;
 export declare const useMessageLogger: () => void;
 export declare const WebSocketStatus: React.FC;
 export {};
+//# sourceMappingURL=websocket.d.ts.map

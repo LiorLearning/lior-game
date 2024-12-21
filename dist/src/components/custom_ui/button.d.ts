@@ -9,3 +9,4 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 declare const Button: React.FC<ButtonProps & React.RefAttributes<HTMLButtonElement>>;
 export { Button, buttonVariants };
+//# sourceMappingURL=button.d.ts.map

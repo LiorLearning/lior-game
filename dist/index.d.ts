@@ -349,22 +349,22 @@ declare namespace CustomUI {
   export { Accordion$1 as Accordion, Button$1 as Button, Card$1 as Card, DropdownMenu$1 as DropdownMenu, Label$1 as Label, Progress$1 as Progress, ScrollArea$1 as ScrollArea, Select$1 as Select, Slider$1 as Slider, Switch$1 as Switch, Toggle$1 as Toggle, ToggleGroup$1 as ToggleGroup };
 }
 
-declare const SandboxProvider: React__default.FC<{
+declare const SandboxProvider: (props: {
     children: ReactNode;
     gameState: any;
     desc: string;
-}>;
+}) => React__default.JSX.Element;
 declare const useSandboxContext: () => {
     componentRef: React__default.RefObject<HTMLDivElement> | null;
     sendAdminMessage?: (role: string, content: string) => Promise<void>;
 };
-declare const LiorGameProvider: React__default.FC<{
+declare const LiorGameProvider: (props: {
     children: ReactNode;
     wsUrl?: string;
     gameState: any;
     desc: string;
-}>;
-declare const useLiorGame: () => any;
+}) => React__default.JSX.Element;
+declare const useLiorGame: () => {};
 declare const Button: React__default.FC<ButtonProps & React__default.RefAttributes<HTMLButtonElement>>;
 declare const Card: React__default.ForwardRefExoticComponent<React__default.HTMLAttributes<HTMLDivElement> & React__default.RefAttributes<HTMLDivElement>>;
 declare const Slider: React__default.FC<Omit<SliderProps & React__default.RefAttributes<HTMLSpanElement>, "ref"> & React__default.RefAttributes<HTMLSpanElement>>;

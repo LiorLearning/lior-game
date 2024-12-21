@@ -10,3 +10,4 @@ declare const Toggle: React.FC<Omit<TogglePrimitive.ToggleProps & React.RefAttri
     size?: "default" | "sm" | "lg" | null | undefined;
 } & import("class-variance-authority/types").ClassProp) | undefined) => string> & React.RefAttributes<HTMLButtonElement>>;
 export { Toggle, toggleVariants };
+//# sourceMappingURL=toggle.d.ts.map

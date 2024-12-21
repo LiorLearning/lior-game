@@ -5,3 +5,4 @@ declare const AccordionItem: React.FC<Omit<AccordionPrimitive.AccordionItemProps
 declare const AccordionTrigger: React.FC<Omit<AccordionPrimitive.AccordionTriggerProps & React.RefAttributes<HTMLButtonElement>, "ref"> & React.RefAttributes<HTMLButtonElement>>;
 declare const AccordionContent: React.FC<Omit<AccordionPrimitive.AccordionContentProps & React.RefAttributes<HTMLDivElement>, "ref"> & React.RefAttributes<HTMLDivElement>>;
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent };
+//# sourceMappingURL=accordion.d.ts.map

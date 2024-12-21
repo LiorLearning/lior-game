@@ -10,3 +10,4 @@ declare const ToggleGroupItem: React.ForwardRefExoticComponent<Omit<ToggleGroupP
     size?: "default" | "sm" | "lg" | null | undefined;
 } & import("class-variance-authority/types").ClassProp) | undefined) => string> & React.RefAttributes<HTMLButtonElement>>;
 export { ToggleGroup, ToggleGroupItem };
+//# sourceMappingURL=toggle-group.d.ts.map

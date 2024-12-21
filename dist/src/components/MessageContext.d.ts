@@ -40,3 +40,4 @@ declare const MessageProvider: React.FC<{
     children: React.ReactNode;
 }>;
 export { MessageProvider };
+//# sourceMappingURL=MessageContext.d.ts.map

@@ -4,3 +4,4 @@ interface MicAnimationProps {
 }
 declare const MicAnimation: React.FC<MicAnimationProps>;
 export default MicAnimation;
+//# sourceMappingURL=mic-animation.d.ts.map

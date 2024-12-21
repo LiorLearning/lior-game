@@ -7,3 +7,4 @@ export declare const LiorGameProvider: React.FC<{
     desc: string;
 }>;
 export declare const useLiorGame: () => {};
+//# sourceMappingURL=lior-game-provider.d.ts.map

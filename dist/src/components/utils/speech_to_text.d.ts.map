@@ -1,0 +1,1 @@
+{"version":3,"file":"speech_to_text.d.ts","sourceRoot":"","sources":["../../../../src/components/utils/speech_to_text.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAsC,MAAM,OAAO,CAAC;AAM3D,UAAU,iBAAiB;IACzB,gBAAgB,EAAE,MAAM,IAAI,CAAC;IAC7B,eAAe,EAAE,CAAC,IAAI,EAAE,IAAI,KAAK,IAAI,CAAC;CACvC;AAED,QAAA,MAAM,YAAY,EAAE,KAAK,CAAC,EAAE,CAAC,iBAAiB,CA4O7C,CAAC;AAEF,eAAe,YAAY,CAAC"}

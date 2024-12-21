@@ -10,3 +10,4 @@ export interface LayoutProps {
     params?: Promise<SegmentParams>;
 }
 export {};
+//# sourceMappingURL=page.d.ts.map

@@ -10,3 +10,4 @@ declare const ToggleGroupItem: React.FC<Omit<ToggleGroupPrimitive.ToggleGroupIte
     size?: "default" | "sm" | "lg" | null | undefined;
 } & import("class-variance-authority/types").ClassProp) | undefined) => string> & React.RefAttributes<HTMLButtonElement>>;
 export { ToggleGroup, ToggleGroupItem };
+//# sourceMappingURL=toggle-group.d.ts.map
