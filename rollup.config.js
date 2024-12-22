@@ -3,8 +3,10 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import external from 'rollup-plugin-peer-deps-external';
 import babel from '@rollup/plugin-babel';
-import css from 'rollup-plugin-import-css';
 import dts from 'rollup-plugin-dts';
+import postcss from 'rollup-plugin-postcss';
+import autoprefixer from 'autoprefixer';
+import tailwindcss from 'tailwindcss';
 
 export default [
   {
@@ -25,9 +27,18 @@ export default [
       external(),
       resolve(),
       commonjs(),
-      css({
-        output: 'dist/styles.css',
-        minimize: true
+      postcss({
+        config: {
+          path: './postcss.config.cjs'
+        },
+        plugins: [
+          tailwindcss('./tailwind.config.ts'),
+          autoprefixer()
+        ],
+        extract: 'dist/styles.css',
+        minimize: true,
+        inject: false,
+        modules: false,
       }),
       typescript({
         tsconfig: './tsconfig.json',
