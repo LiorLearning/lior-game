@@ -42,3 +42,9 @@ next-env.d.ts
 
 # rollup
 .rollup.cache
+
+# dist
+dist/*
+
+# test
+test/*
