@@ -35,7 +35,7 @@ export default [
           tailwindcss('./tailwind.config.ts'),
           autoprefixer()
         ],
-        extract: 'dist/styles.css',
+        extract: 'dist/globals.css',
         minimize: true,
         inject: false,
         modules: false,
