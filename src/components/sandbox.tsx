@@ -32,8 +32,11 @@ export const SandboxProvider: React.FC<{
     };
 
     const sendAdminMessage = async (role: string, content: string) => {
+      console.log(`Sending admin message - Role: ${role}, Content: ${content}`);
+      
       if (role == 'admin') {
-        sendLog({
+        console.log('Preparing admin request message');
+        const adminMessage = {
           type: 'admin',
           timestamp: new Date().toISOString(),
           content: content,
@@ -41,14 +44,21 @@ export const SandboxProvider: React.FC<{
           image: await handleScreenshot(componentRef),
           gameState: JSON.stringify(gameState, null, 0),
           desc: desc,
-        } as AdminRequestMessage)
+        } as AdminRequestMessage;
+        
+        console.log('Sending admin log:', adminMessage);
+        sendLog(adminMessage);
       } else if (role == 'agent') {
-        addToChat({
+        console.log('Preparing agent assistance response');
+        const agentMessage = {
           type: 'agent',
           timestamp: new Date().toISOString(),
           content: content,
           role: 'agent',
-        } as AssistanceResponseMessage)
+        } as AssistanceResponseMessage;
+        
+        console.log('Adding agent message to chat:', agentMessage);
+        addToChat(agentMessage);
       }
     };
 

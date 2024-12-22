@@ -207,10 +207,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ url, child
   };
 
   const addToChat = (message: Message) => {
+    console.log('Adding message to chat:', message);
     if (SPEAKOUT) {
       handlePlayAudio(message.messageId, message.content!);
     }
     if (messageContext) {
+      console.log('Adding message to chat:', message);
       messageContext.setMessages(prev => [...prev, message]);
     }
   };

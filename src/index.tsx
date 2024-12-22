@@ -19,7 +19,12 @@ export const SandboxProvider = (
 
 export const useSandboxContext = () => {
   const context = useSandboxContextHook();
-  return context;
+  return {
+    ...context,
+    sendAdminMessage: context.sendAdminMessage || (async (role: string, content: string) => {
+      console.warn('sendAdminMessage not implemented');
+    })
+  };
 };
 
 export const LiorGameProvider = (

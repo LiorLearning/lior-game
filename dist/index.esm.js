@@ -4402,10 +4402,12 @@ const WebSocketProvider = ({
     (_a = wsRef.current) === null || _a === void 0 ? void 0 : _a.sendMessage(message);
   };
   const addToChat = message => {
+    console.log('Adding message to chat:', message);
     {
       handlePlayAudio(message.messageId, message.content);
     }
     if (messageContext) {
+      console.log('Adding message to chat:', message);
       messageContext.setMessages(prev => [...prev, message]);
     }
   };
@@ -22818,8 +22820,10 @@ const SandboxProvider$1 = ({
     return 'https://mathtutor-images.s3.us-east-1.amazonaws.com/generated-images/generated_image_20241203_010231.png';
   };
   const sendAdminMessage = async (role, content) => {
+    console.log(`Sending admin message - Role: ${role}, Content: ${content}`);
     if (role == 'admin') {
-      sendLog({
+      console.log('Preparing admin request message');
+      const adminMessage = {
         type: 'admin',
         timestamp: new Date().toISOString(),
         content: content,
@@ -22827,14 +22831,19 @@ const SandboxProvider$1 = ({
         image: await handleScreenshot(componentRef),
         gameState: JSON.stringify(gameState, null, 0),
         desc: desc
-      });
+      };
+      console.log('Sending admin log:', adminMessage);
+      sendLog(adminMessage);
     } else if (role == 'agent') {
-      addToChat({
+      console.log('Preparing agent assistance response');
+      const agentMessage = {
         type: 'agent',
         timestamp: new Date().toISOString(),
         content: content,
         role: 'agent'
-      });
+      };
+      console.log('Adding agent message to chat:', agentMessage);
+      addToChat(agentMessage);
     }
   };
   const handleReloadPage = () => {
@@ -31350,7 +31359,11 @@ const SuccessAnimation$1 = () => {
 const SandboxProvider = props => /*#__PURE__*/React__default.createElement(SandboxProvider$1, props);
 const useSandboxContext = () => {
   const context = useSandboxContext$1();
-  return context;
+  return Object.assign(Object.assign({}, context), {
+    sendAdminMessage: context.sendAdminMessage || (async (role, content) => {
+      console.warn('sendAdminMessage not implemented');
+    })
+  });
 };
 const LiorGameProvider = props => /*#__PURE__*/React__default.createElement(LiorGameProvider$1, props);
 const useLiorGame = () => useLiorGame$1();

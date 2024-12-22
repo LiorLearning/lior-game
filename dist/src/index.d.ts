@@ -7,8 +7,8 @@ export declare const SandboxProvider: (props: {
     desc: string;
 }) => React.JSX.Element;
 export declare const useSandboxContext: () => {
+    sendAdminMessage: (role: string, content: string) => Promise<void>;
     componentRef: React.RefObject<HTMLDivElement> | null;
-    sendAdminMessage?: (role: string, content: string) => Promise<void>;
 };
 export declare const LiorGameProvider: (props: {
     children: ReactNode;
