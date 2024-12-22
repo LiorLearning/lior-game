@@ -22926,7 +22926,6 @@ const SandboxProvider$1 = ({
 };
 const useSandboxContext$1 = () => {
   const context = React.useContext(SandboxContext);
-  console.log('context', context);
   if (context === undefined) {
     throw new Error('useSandboxContext must be used within a SandboxProvider');
   }
