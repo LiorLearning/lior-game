@@ -94,7 +94,6 @@ class WebSocketManager {
   sendMessage(message: Message | Blob) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       if (message instanceof Blob) {
-        console.log("Message(audio): ", message);
         this.ws.send(message);
       } else {
         this.ws.send(JSON.stringify(message));
@@ -207,12 +206,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ url, child
   };
 
   const addToChat = (message: Message) => {
-    console.log('Adding message to chat:', message);
     if (SPEAKOUT) {
       handlePlayAudio(message.messageId, message.content!);
     }
     if (messageContext) {
-      console.log('Adding message to chat:', message);
       messageContext.setMessages(prev => [...prev, message]);
     }
   };

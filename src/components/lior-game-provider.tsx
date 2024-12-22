@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { MessageProvider } from '@/components/MessageContext';
 import { WebSocketProvider } from '@/components/websocket';
-import { SandboxProvider } from './sandbox';
+import { SandboxProvider, useSandboxContext } from './sandbox';
 
 export const LiorGameContext = createContext<{} | undefined>(undefined);
 
@@ -19,9 +19,9 @@ export const LiorGameProvider: React.FC<{
   return (
     <MessageProvider>
       <WebSocketProvider url={wsUrl}>
-          <SandboxProvider gameState={gameState} desc={desc}>
-            {children}
-          </SandboxProvider>
+        <SandboxProvider gameState={gameState} desc={desc}>
+          {children}
+        </SandboxProvider>
       </WebSocketProvider>
     </MessageProvider>
   );

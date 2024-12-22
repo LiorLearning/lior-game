@@ -356,7 +356,6 @@ declare const SandboxProvider: (props: {
 }) => React__default.JSX.Element;
 declare const useSandboxContext: () => {
     sendAdminMessage: (role: string, content: string) => Promise<void>;
-    componentRef: React__default.RefObject<HTMLDivElement> | null;
 };
 declare const LiorGameProvider: (props: {
     children: ReactNode;

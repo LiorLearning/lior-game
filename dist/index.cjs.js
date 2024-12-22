@@ -4329,7 +4329,6 @@ class WebSocketManager {
     var _a;
     if (((_a = this.ws) === null || _a === void 0 ? void 0 : _a.readyState) === WebSocket.OPEN) {
       if (message instanceof Blob) {
-        console.log("Message(audio): ", message);
         this.ws.send(message);
       } else {
         this.ws.send(JSON.stringify(message));
@@ -4422,12 +4421,10 @@ const WebSocketProvider = ({
     (_a = wsRef.current) === null || _a === void 0 ? void 0 : _a.sendMessage(message);
   };
   const addToChat = message => {
-    console.log('Adding message to chat:', message);
     {
       handlePlayAudio(message.messageId, message.content);
     }
     if (messageContext) {
-      console.log('Adding message to chat:', message);
       messageContext.setMessages(prev => [...prev, message]);
     }
   };
@@ -22818,7 +22815,6 @@ const Chat = ({
 
 // Create a context for the Sandbox component
 const SandboxContext = /*#__PURE__*/React.createContext({
-  componentRef: null,
   sendAdminMessage: () => Promise.resolve()
 });
 // Create a provider component for the Sandbox
@@ -22832,17 +22828,15 @@ const SandboxProvider$1 = ({
     componentRef.current = ref.current;
   };
   const {
+    isConnected,
     sendLog,
-    addToChat,
-    isConnected
+    addToChat
   } = useWebSocketLogger();
   const getBackgroundImage = () => {
     return 'https://mathtutor-images.s3.us-east-1.amazonaws.com/generated-images/generated_image_20241203_010231.png';
   };
   const sendAdminMessage = async (role, content) => {
-    console.log(`Sending admin message - Role: ${role}, Content: ${content}`);
-    if (role == 'admin') {
-      console.log('Preparing admin request message');
+    if (role === 'admin') {
       const adminMessage = {
         type: 'admin',
         timestamp: new Date().toISOString(),
@@ -22852,17 +22846,14 @@ const SandboxProvider$1 = ({
         gameState: JSON.stringify(gameState, null, 0),
         desc: desc
       };
-      console.log('Sending admin log:', adminMessage);
       sendLog(adminMessage);
-    } else if (role == 'agent') {
-      console.log('Preparing agent assistance response');
+    } else if (role === 'agent') {
       const agentMessage = {
         type: 'agent',
         timestamp: new Date().toISOString(),
         content: content,
         role: 'agent'
       };
-      console.log('Adding agent message to chat:', agentMessage);
       addToChat(agentMessage);
     }
   };
@@ -22889,7 +22880,6 @@ const SandboxProvider$1 = ({
   }, []);
   return /*#__PURE__*/React.createElement(SandboxContext.Provider, {
     value: {
-      componentRef,
       sendAdminMessage
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -22936,6 +22926,7 @@ const SandboxProvider$1 = ({
 };
 const useSandboxContext$1 = () => {
   const context = React.useContext(SandboxContext);
+  console.log('context', context);
   if (context === undefined) {
     throw new Error('useSandboxContext must be used within a SandboxProvider');
   }
@@ -31379,6 +31370,8 @@ const SuccessAnimation$1 = () => {
 const SandboxProvider = props => /*#__PURE__*/React.createElement(SandboxProvider$1, props);
 const useSandboxContext = () => {
   const context = useSandboxContext$1();
+  // Logging context for debugging purposes
+  console.log('Sandbox Context:', context);
   return Object.assign(Object.assign({}, context), {
     sendAdminMessage: context.sendAdminMessage || (async (role, content) => {
       console.warn('sendAdminMessage not implemented');

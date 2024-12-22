@@ -1,17 +1,15 @@
 import React, { createContext, useContext, useRef, useEffect, ReactNode } from 'react';
 import Chat from "@/components/Chat";
 import { useWebSocketLogger } from '@/components/websocket';
-import { handleScreenshot } from '@/components/utils/screenshot';
-import { AdminRequestMessage, AssistanceResponseMessage } from '@/components/MessageContext';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw } from 'lucide-react';
+import { AdminRequestMessage, AssistanceResponseMessage } from './MessageContext';
+import { handleScreenshot } from './utils/screenshot';
 
 // Create a context for the Sandbox component
 const SandboxContext = createContext<{
-  componentRef: React.RefObject<HTMLDivElement> | null;
-  sendAdminMessage?: (role: string, content: string) => Promise<void>;
+  sendAdminMessage: (role: string, content: string) => Promise<void>;
 }>({
-  componentRef: null,
   sendAdminMessage: () => Promise.resolve(),
 });
 
@@ -19,48 +17,41 @@ const SandboxContext = createContext<{
 export const SandboxProvider: React.FC<{ 
   children: ReactNode,
   gameState: any,
-  desc: string
+  desc: string,
 }> = ({ children, gameState, desc }) => {
-    const componentRef = useRef<HTMLDivElement | null>(null);
-    const setComponentRef = (ref: React.RefObject<HTMLDivElement>) => {
-      componentRef.current = ref.current;
-    };
-    const { sendLog, addToChat, isConnected } = useWebSocketLogger()
+  const componentRef = useRef<HTMLDivElement | null>(null);
+  const setComponentRef = (ref: React.RefObject<HTMLDivElement>) => {
+    componentRef.current = ref.current;
+  };
+  const { isConnected, sendLog, addToChat } = useWebSocketLogger()
 
-    const getBackgroundImage = () => {
-      return 'https://mathtutor-images.s3.us-east-1.amazonaws.com/generated-images/generated_image_20241203_010231.png';
-    };
+  const getBackgroundImage = () => {
+    return 'https://mathtutor-images.s3.us-east-1.amazonaws.com/generated-images/generated_image_20241203_010231.png';
+  };
 
-    const sendAdminMessage = async (role: string, content: string) => {
-      console.log(`Sending admin message - Role: ${role}, Content: ${content}`);
-      
-      if (role == 'admin') {
-        console.log('Preparing admin request message');
-        const adminMessage = {
-          type: 'admin',
-          timestamp: new Date().toISOString(),
-          content: content,
-          role: role,
-          image: await handleScreenshot(componentRef),
-          gameState: JSON.stringify(gameState, null, 0),
-          desc: desc,
-        } as AdminRequestMessage;
-        
-        console.log('Sending admin log:', adminMessage);
-        sendLog(adminMessage);
-      } else if (role == 'agent') {
-        console.log('Preparing agent assistance response');
-        const agentMessage = {
-          type: 'agent',
-          timestamp: new Date().toISOString(),
-          content: content,
-          role: 'agent',
-        } as AssistanceResponseMessage;
-        
-        console.log('Adding agent message to chat:', agentMessage);
-        addToChat(agentMessage);
-      }
-    };
+
+  const sendAdminMessage = async (role: string, content: string) => {
+    if (role === 'admin') {
+      const adminMessage = {
+        type: 'admin',
+        timestamp: new Date().toISOString(),
+        content: content,
+        role: role,
+        image: await handleScreenshot(componentRef),
+        gameState: JSON.stringify(gameState, null, 0),
+        desc: desc,
+      } as AdminRequestMessage;
+      sendLog(adminMessage);
+    } else if (role === 'agent') {
+      const agentMessage = {
+        type: 'agent',
+        timestamp: new Date().toISOString(),
+        content: content,
+        role: 'agent',
+      } as AssistanceResponseMessage;
+      addToChat(agentMessage);
+    }
+  };
 
     const handleReloadPage = () => {
       window.location.reload();
@@ -90,7 +81,7 @@ export const SandboxProvider: React.FC<{
     }, []);
 
     return (
-      <SandboxContext.Provider value={{ componentRef, sendAdminMessage }}>
+      <SandboxContext.Provider value={{ sendAdminMessage }}>
         <div className="flex h-screen">
           <div className="w-[75%] border-r-border flex flex-col" ref={componentRef}>
             <div className="relative h-full w-full">

@@ -19,6 +19,8 @@ export const SandboxProvider = (
 
 export const useSandboxContext = () => {
   const context = useSandboxContextHook();
+  // Logging context for debugging purposes
+  console.log('Sandbox Context:', context);
   return {
     ...context,
     sendAdminMessage: context.sendAdminMessage || (async (role: string, content: string) => {
