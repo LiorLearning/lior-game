@@ -12,9 +12,9 @@ function LiorGameWrapper() {
 
 function GameWrapper() {
   const { gameState } = useGameState();
-
+  const wsUrl = `${process.env.NEXT_PUBLIC_WS_BASE_URL}/superartifacts/ws`;
   return (
-    <LiorGameProvider gameState={gameState ?? {}} desc={desc}>
+    <LiorGameProvider gameState={gameState ?? {}} desc={desc} wsUrl={wsUrl}>
       <LiorGameWrapper />
     </LiorGameProvider>
   );

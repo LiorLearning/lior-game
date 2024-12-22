@@ -7,12 +7,12 @@ export const LiorGameContext = createContext<{} | undefined>(undefined);
 
 export const LiorGameProvider: React.FC<{ 
   children: ReactNode,
-  wsUrl?: string,
+  wsUrl: string,
   gameState: any,
   desc: string
 }> = ({ 
   children, 
-  wsUrl = `${process.env.NEXT_PUBLIC_WS_BASE_URL}/superartifacts/ws`,
+  wsUrl,
   gameState,
   desc
 }) => {
