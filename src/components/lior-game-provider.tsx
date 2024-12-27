@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { MessageProvider } from '@/components/MessageContext';
 import { WebSocketProvider } from '@/components/websocket';
-import { SandboxProvider, useSandboxContext } from './sandbox';
+import { SandboxProvider } from './sandbox';
 
 export const LiorGameContext = createContext<{} | undefined>(undefined);
 

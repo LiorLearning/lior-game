@@ -25,11 +25,6 @@ export const SandboxProvider: React.FC<{
   };
   const { isConnected, sendLog, addToChat } = useWebSocketLogger()
 
-  const getBackgroundImage = () => {
-    return 'https://mathtutor-images.s3.us-east-1.amazonaws.com/generated-images/generated_image_20241203_010231.png';
-  };
-
-
   const sendAdminMessage = async (role: string, content: string) => {
     if (role === 'admin') {
       const adminMessage = {
@@ -86,7 +81,6 @@ export const SandboxProvider: React.FC<{
           <div className="w-[75%] border-r-border flex flex-col" ref={componentRef}>
             <div className="relative h-full w-full">
               <div className="absolute inset-0 w-full h-full">
-                <img src={getBackgroundImage()} alt="Background" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gray-600 bg-opacity-50 backdrop-blur-sm"></div>
               </div>
               <div className="relative h-full w-full flex flex-col">
