@@ -2,19 +2,21 @@
 
 import { Suspense } from 'react';
 import { LiorGameProvider } from '@/components/lior-game-provider';
-import FractionsGame, { desc, GameStateProvider, useGameState } from './game/game';
+import Game from './fraction-addition/game';
 import { useSandboxContext } from '@/components/sandbox';
+import { GameStateProvider, useGameState } from './fraction-addition/state-utils';
+import { desc } from './fraction-addition/game-state';
 
 function LiorGameWrapper() {
   const { sendAdminMessage } = useSandboxContext();
-  return <FractionsGame sendAdminMessage={sendAdminMessage} />;
+  return <Game sendAdminMessage={sendAdminMessage} />;
 }
 
 function GameWrapper() {
-  const { gameState } = useGameState();
+  const { gameStateRef } = useGameState();
   const wsUrl = `${process.env.NEXT_PUBLIC_WS_BASE_URL}/superartifacts/ws`;
   return (
-    <LiorGameProvider gameState={gameState ?? {}} desc={desc} wsUrl={wsUrl}>
+    <LiorGameProvider gameState={gameStateRef.current ?? {}} desc={desc} wsUrl={wsUrl}>
       <LiorGameWrapper />
     </LiorGameProvider>
   );
