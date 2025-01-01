@@ -1,11 +1,51 @@
+// Game state for fraction addition game with two main screens:
+// 1. Chocolate bar screen for visual fraction addition
+// 2. Denominator screen for understanding fraction addition rules
+
+// Each screen maintains its own state tracking:
+// - User selections and inputs
+// - Multi-step progression
+// - Validation and feedback
+
 export const desc = `
-This is the game state for the fraction addition game.
-It is a context that provides a ref to the game state and a function to update the game state.
-The game state is an object that contains the current state of the game.
-The game state is updated by the setGameStateRef function.
-The setGameStateRef function is a function that takes a new state and updates the game state.
-The new state can be a function that returns a new state or a partial state.
-The partial state is a new state that is merged with the current state.
+Welcome to the Fraction Addition Game! Learn to add fractions through interactive chocolate bars.
+
+Detailed Gameplay:
+
+Chocolate Bar Screen
+1. You'll see a chocolate bar divided into equal parts based on the denominator
+2. First select pieces to represent the first fraction (e.g. 1/3)
+3. Then you'll see additional pieces from a friend (the second fraction)
+4. Select all pieces you now have to show the sum
+5. Enter the resulting fraction's numerator and denominator
+6. Choose the correct rule about denominators in fraction addition
+
+Denominator Screen
+1. You'll see the same fraction addition problem
+2. Select the correct rule about denominators in fraction addition
+3. Select the correct rule about numerators in fraction addition
+4. Enter the final answer showing your understanding
+
+Game State Details:
+- fractionProblem: Stores the two fractions being added
+- chocolateBarPieces: Number of total pieces in the visual bar
+- correctAnswer: The expected sum of the fractions
+- currentScreen: Tracks which screen is active
+- chocolateBarScreen: Manages state for the visual addition screen
+  * selectedPieces: Tracks clicked pieces for first fraction
+  * step2Pieces: Tracks pieces selected after adding second fraction
+  * numerator/denominator: User's input for the sum
+  * showStep2/3: Controls multi-step progression
+- denominatorScreen: Manages state for the rules screen
+  * denominatorOption: User's choice about denominator rules
+  * numeratorOption: User's choice about numerator rules
+  * answerNumerator/Denominator: Final fraction input
+  * showStep2/3: Controls multi-step progression
+
+Tips:
+- Use the chocolate bars to visualize how fractions combine
+- Pay attention to whether denominators change when adding fractions
+- Practice both visual and rule-based understanding
 `
 
 interface Fraction {

@@ -103,7 +103,7 @@ const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
       const requestMessage = message as AssistanceRequestMessage;
       return (
         <div className="flex justify-end mb-4">
-          <div className="max-w-[70%] p-3 rounded-2xl bg-primary text-primary-foreground shadow-sm">
+          <div className="max-w-[70%] p-3 rounded-2xl bg-primary text-primary-foreground shadow-sm text-sm">
             {requestMessage.content}
           </div>
         </div>
@@ -114,7 +114,7 @@ const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
       const agentMessage = message as AssistanceResponseMessage; 
       return (
         <div className="flex justify-start mb-4">
-          <div className="max-w-[70%] p-3 rounded-2xl bg-secondary text-secondary-foreground shadow-sm">
+          <div className="max-w-[70%] p-3 rounded-2xl bg-secondary text-secondary-foreground shadow-sm text-sm">
             {agentMessage.content}
             <div className="mt-2 flex justify-end">
             <Button 

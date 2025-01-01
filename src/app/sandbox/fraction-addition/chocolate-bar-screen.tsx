@@ -6,9 +6,10 @@ import { useGameState } from './state-utils'
 
 interface ChocolateBarScreenProps {
   onProceed: () => void;
+  sendAdminMessage: (role: string, content: string) => void;
 }
 
-export function ChocolateBarScreen({ onProceed }: ChocolateBarScreenProps) {
+export function ChocolateBarScreen({ onProceed, sendAdminMessage }: ChocolateBarScreenProps) {
   const { gameStateRef, setGameStateRef } = useGameState()
   const gameState = gameStateRef.current
   const { fractionProblem, chocolateBarPieces, correctAnswer, chocolateBarScreen } = gameState
@@ -25,13 +26,17 @@ export function ChocolateBarScreen({ onProceed }: ChocolateBarScreenProps) {
   } = chocolateBarScreen
 
   useEffect(() => {
+    const isCorrect = selectedPieces.length === fraction1.numerator
     setGameStateRef((prevState) => ({
       ...prevState,
       chocolateBarScreen: {
         ...prevState.chocolateBarScreen,
-        showStep2: selectedPieces.length === fraction1.numerator,
+        showStep2: isCorrect,
       },
     }))
+    if (isCorrect) {
+      sendAdminMessage('agent', `Great! Now imagine you get ${fraction2.numerator} more pieces from a friend. Try selecting the pieces you have now.`);
+    }
   }, [selectedPieces, fraction1.numerator])
 
   useEffect(() => {
@@ -46,13 +51,17 @@ export function ChocolateBarScreen({ onProceed }: ChocolateBarScreenProps) {
   }, [step2Pieces, numerator, denominator])
 
   useEffect(() => {
+    const isCorrect = selectedOption === 0 && numerator === correctAnswer.numerator.toString() && denominator === correctAnswer.denominator.toString()
     setGameStateRef((prevState) => ({
       ...prevState,
       chocolateBarScreen: {
         ...prevState.chocolateBarScreen,
-        showFooter: selectedOption === 0 && numerator === correctAnswer.numerator.toString() && denominator === correctAnswer.denominator.toString(),
+        showFooter: isCorrect,
       },
     }))
+    if (isCorrect) {
+      sendAdminMessage('agent', "You're right, why do you think the denominator remains the same?");
+    }
   }, [selectedOption, numerator, denominator])
 
   const handlePieceClick = (index: number) => {
@@ -277,12 +286,11 @@ export function ChocolateBarScreen({ onProceed }: ChocolateBarScreenProps) {
             )}
           </>
         )}
-        <p>{showFooter}</p>
       </div>
 
       {/* Footer */}
       {showFooter && (
-        <div className="absolute bottom-0 left-0 right-0 bg-[#66CDAA] p-4">
+        <div className="mt-4 bg-[#66CDAA] p-4">
           <div className="max-w-2xl mx-auto flex justify-between items-center">
             <p className="text-xl font-medium">Correct! 🎉</p>
             <Button 

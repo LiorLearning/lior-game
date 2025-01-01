@@ -49,7 +49,9 @@ export const SandboxProvider: React.FC<{
   };
 
     const handleReloadPage = () => {
-      window.location.reload();
+      if (typeof window !== 'undefined') {
+        window.location.reload();
+      }
     };
 
     useEffect(() => {
@@ -77,40 +79,37 @@ export const SandboxProvider: React.FC<{
 
     return (
       <SandboxContext.Provider value={{ sendAdminMessage }}>
-        <div className="flex h-screen">
-          <div className="w-[75%] border-r-border flex flex-col" ref={componentRef}>
-            <div className="relative h-full w-full">
-              <div className="absolute inset-0 w-full h-full">
-                <div className="absolute inset-0 bg-gray-600 bg-opacity-50 backdrop-blur-sm"></div>
-              </div>
-              <div className="relative h-full w-full flex flex-col">
-                <div className="p-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={handleReloadPage}
-                    className="hover:bg-gray-100 text-foreground px-4 py-2 flex items-center gap-2"
-                    title="Reload Page"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    <span>Reload</span>
-                  </Button>
-                </div>
-                <div className="flex-1 flex justify-center items-center">
-                  {isConnected ? (
-                    children
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full bg-gradient-to-b p-4">
-                      <h1 className="text-2xl font-bold mb-4 text-center">
-                        Loading Game
-                      </h1>
-                      <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
-                    </div>
-                  )}
-                </div>
+        <div className="flex h-full">
+          <div className="w-[75%] border-r-border flex flex-col overflow-auto fixed left-0 top-0 h-full" ref={componentRef}>
+            <div className="p-2">
+              <Button 
+                variant="outline" 
+                onClick={handleReloadPage}
+                className="hover:bg-gray-100 text-foreground px-2 py-1 flex items-center gap-1"
+                title="Reload Page"
+              >
+                <RefreshCw className="h-3 w-3" />
+                <span className="text-sm">Reload</span>
+              </Button>
+            </div>
+            <div className="relative h-full w-full flex flex-col overflow-y-auto">
+              <div className="flex-1 flex justify-center items-center">
+                {isConnected ? (
+                  <div className="scale-75">
+                    {children}
+                  </div> 
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full bg-gradient-to-b p-4">
+                    <h1 className="text-md font-bold mb-4 text-center">
+                      Loading Game
+                    </h1>
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
-          <div className="w-[25%] min-w-[250px] flex flex-col">
+          <div className="w-[25%] min-w-[250px] flex flex-col border-l border-gray-200 fixed right-0 top-0 h-full">
             <Chat desc={desc} componentRef={componentRef} gameState={gameState}/>
           </div>
         </div>

@@ -3,7 +3,11 @@
 import { useEffect } from 'react'
 import { useGameState } from './state-utils'
 
-export function DenominatorScreen() {
+interface DenominatorScreenProps {
+  sendAdminMessage: (role: string, content: string) => void;
+}
+
+export function DenominatorScreen({ sendAdminMessage }: DenominatorScreenProps) {
   const { gameStateRef, setGameStateRef } = useGameState()
   const gameState = gameStateRef.current
   const { fractionProblem, correctAnswer, denominatorScreen } = gameState
@@ -44,6 +48,9 @@ export function DenominatorScreen() {
         isAnswerCorrect: correct,
       },
     })
+    if (correct) {
+      sendAdminMessage('agent', `Awesome, you indeed have ${correctAnswer.numerator} pieces of size 1/${correctAnswer.denominator}th!`);
+    }
   }, [answerNumerator, answerDenominator, correctAnswer])
 
   const handleDenominatorOptionClick = (option: number) => {
@@ -210,7 +217,7 @@ export function DenominatorScreen() {
 
       {/* Footer */}
       {isAnswerCorrect && (
-        <div className={`absolute bottom-0 left-0 right-0 bg-[#66CDAA] transition-all duration-500 ease-in-out transform`}>
+        <div className={`mt-4 bg-[#66CDAA] transition-all duration-500 ease-in-out transform`}>
           <div className="max-w-2xl mx-auto flex items-center p-4">
             <p className="text-xl font-medium">Correct! 🎉</p>
           </div>
