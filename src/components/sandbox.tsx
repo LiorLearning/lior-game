@@ -80,7 +80,10 @@ export const SandboxProvider: React.FC<{
     return (
       <SandboxContext.Provider value={{ sendAdminMessage }}>
         <div className="flex h-full">
-          <div className="w-[75%] border-r-border flex flex-col overflow-auto fixed left-0 top-0 h-full" ref={componentRef}>
+          <div className="w-[25%] min-w-[250px] flex flex-col border-r border-gray-200 fixed left-0 top-0 h-full">
+            <Chat desc={desc} componentRef={componentRef} gameState={gameState}/>
+          </div>
+          <div className="w-[75%] border-r-border flex flex-col overflow-auto fixed right-0 top-0 h-full" ref={componentRef}>
             <div className="p-2">
               <Button 
                 variant="outline" 
@@ -88,8 +91,8 @@ export const SandboxProvider: React.FC<{
                 className="hover:bg-gray-100 text-foreground px-2 py-1 flex items-center gap-1"
                 title="Reload Page"
               >
-                <RefreshCw className="h-3 w-3" />
-                <span className="text-sm">Reload</span>
+                <RefreshCw className="h-2 w-2" />
+                <span className="text-xs">Reload</span>
               </Button>
             </div>
             <div className="relative h-full w-full flex flex-col overflow-y-auto">
@@ -108,9 +111,6 @@ export const SandboxProvider: React.FC<{
                 )}
               </div>
             </div>
-          </div>
-          <div className="w-[25%] min-w-[250px] flex flex-col border-l border-gray-200 fixed right-0 top-0 h-full">
-            <Chat desc={desc} componentRef={componentRef} gameState={gameState}/>
           </div>
         </div>
       </SandboxContext.Provider>

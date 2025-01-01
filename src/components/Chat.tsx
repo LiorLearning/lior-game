@@ -10,7 +10,6 @@ import {
 import { useWebSocketLogger, WebSocketStatus } from './websocket'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import SpeechToText from './utils/speech_to_text'
 import { Pause, Volume2, Send } from 'lucide-react'
 import { AudioContext } from './utils/audio_stream'
 import { handleScreenshot } from './utils/screenshot'
@@ -134,8 +133,8 @@ const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-background">
-        <h2 className="text-lg font-semibold text-foreground">Chat</h2>
+      <div className="flex items-center justify-between px-4 py-2 border-b bg-background">
+        <h2 className="text-md font-semibold text-foreground">Chat</h2>
         <WebSocketStatus />
       </div>
       
@@ -171,9 +170,9 @@ const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
           >
             <Send className="h-5 w-5" />
           </Button>
-          <div className='relative w-1/2'>
+          {/* <div className='relative w-1/2'>
             <SpeechToText onRecordingStart={handleRecordingStart} onRecordingStop={handleRecordingStop} />
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
