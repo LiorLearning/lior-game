@@ -2,10 +2,10 @@
 
 import { Suspense } from 'react';
 import { LiorGameProvider } from '@/components/lior-game-provider';
-import Game from './fraction-addition/game';
+import Game from './addition/game';
 import { useSandboxContext } from '@/components/sandbox';
-import { GameStateProvider, useGameState } from './fraction-addition/state-utils';
-import { desc } from './fraction-addition/game-state';
+import { GameStateProvider, useGameState } from './addition/state-utils';
+import { desc } from './addition/game-state';
 
 function LiorGameWrapper() {
   const { sendAdminMessage } = useSandboxContext();
