@@ -98,7 +98,7 @@ export const SandboxProvider: React.FC<{
             <div className="relative h-full w-full flex flex-col overflow-y-auto">
               <div className="flex-1 flex justify-center items-center">
                 {isConnected ? (
-                  <div className="scale-75">
+                  <div className="scale-75 min-w-[100%]">
                     {children}
                   </div> 
                 ) : (

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // Expanded and more diverse emoji list
 const celebrationEmojis = [ '🎉', '🎊', '🎈', '🥳', '✨', '🚀', '💥', '🌟', '🏆' ];
 
-const SuccessAnimation = () => {
+export const SuccessAnimation = () => {
   // Define the type for the emoji objects
   type Emoji = {
     id: number;
