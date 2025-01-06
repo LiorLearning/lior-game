@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Expanded and more diverse emoji list
-const celebrationEmojis = [ '🎉', '🎊', '🎈', '🥳', '✨', '🚀', '💥', '🌟', '🏆' ];
-
 export const SuccessAnimation = () => {
-  // Define the type for the emoji objects
-  type Emoji = {
+  // Define the type for the square objects
+  type Square = {
     id: number;
-    emoji: string;
     x: number;
     delay: number;
     duration: number;
+    color: string;
   };
 
   // Set the state with the defined type
-  const [emojis, setEmojis] = useState<Emoji[]>([]);
+  const [squares, setSquares] = useState<Square[]>([]);
+
+  // Color palette matching the context
+  const colors = ['#FFD700', '#FF6347', '#00CED1', '#FF69B4'];
 
   // Enhanced randomization functions
-  const getRandomEmoji = () => 
-    celebrationEmojis[Math.floor(Math.random() * celebrationEmojis.length)];
+  const getRandomColor = () => 
+    colors[Math.floor(Math.random() * colors.length)];
 
   const getRandomPosition = () => ({
     x: Math.random() * window.innerWidth,
@@ -27,23 +27,23 @@ export const SuccessAnimation = () => {
     duration: Math.random() * 3 + 2,
   });
 
-  // Continuous emoji generation with staggered approach
+  // Continuous square generation with staggered approach
   useEffect(() => {
-    const generateNewEmoji = () => {
-      const newEmoji = {
+    const generateNewSquare = () => {
+      const newSquare = {
         id: Date.now(),
-        emoji: getRandomEmoji(),
+        color: getRandomColor(),
         ...getRandomPosition()
       };
       
-      setEmojis(prevEmojis => {
-        // Keep a maximum of 100 emojis to prevent performance issues
-        const updatedEmojis = [...prevEmojis, newEmoji];
-        return updatedEmojis.slice(-40);
+      setSquares(prevSquares => {
+        // Keep a maximum of 100 squares to prevent performance issues
+        const updatedSquares = [...prevSquares, newSquare];
+        return updatedSquares.slice(-40);
       });
     };
 
-    const interval = setInterval(generateNewEmoji, 50);
+    const interval = setInterval(generateNewSquare, 50);
     const timeout = setTimeout(() => clearInterval(interval), 5000); // Stop after 5 seconds
 
     return () => {
@@ -55,32 +55,33 @@ export const SuccessAnimation = () => {
   return (
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
       <AnimatePresence>
-        {emojis.map((emojiObj) => (
+        {squares.map((squareObj) => (
           <motion.div
-            key={emojiObj.id}
+            key={squareObj.id}
             initial={{ 
               y: -100, 
-              x: emojiObj.x, 
+              x: squareObj.x, 
               opacity: 1,
             }}
             animate={{ 
               y: window.innerHeight + 100, 
               opacity: [1, 1, 0],
-              x: emojiObj.x + (Math.random() * 100 - 50)
+              x: squareObj.x + (Math.random() * 100 - 50)
             }}
             exit={{ opacity: 0 }}
             transition={{ 
-              duration: emojiObj.duration, 
-              delay: emojiObj.delay,
+              duration: squareObj.duration, 
+              delay: squareObj.delay,
               ease: "easeInOut"
             }}
-            className="absolute select-none text-4xl"
+            className="absolute animate-fall"
             style={{ 
-              left: emojiObj.x, 
+              left: squareObj.x,
+              backgroundColor: squareObj.color,
+              width: '10px',
+              height: '10px'
             }}
-          >
-            {emojiObj.emoji}
-          </motion.div>
+          />
         ))}
       </AnimatePresence>
     </div>

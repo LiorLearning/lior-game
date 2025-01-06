@@ -36,6 +36,7 @@ export const useLiorGame = () => useLiorGameHook();
 export const { 
   Button, 
   Card, 
+  Input,
   Slider, 
   Switch, 
   Select, 
