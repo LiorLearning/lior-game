@@ -219,6 +219,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ url, child
     if (messageContext) {
       messageContext.setMessages(prev => [...prev, message]);
     }
+    wsRef.current?.sendMessage(message);
   };
 
   const contextValue = React.useMemo(() => ({
@@ -268,6 +269,3 @@ export const WebSocketStatus: React.FC = () => {
     </div>
   );
 };
-
-
-// TODO: Batch send in websocket
