@@ -84,7 +84,7 @@ export const SandboxProvider: React.FC<{
             <Chat desc={desc} componentRef={componentRef} gameState={gameState}/>
           </div>
           <div className="w-[75%] border-r-border flex flex-col overflow-auto fixed right-0 top-0 h-full" ref={componentRef}>
-            <div className="p-2">
+            <div className="absolute top-5 right-5 z-10">
               <Button 
                 variant="outline" 
                 onClick={handleReloadPage}
