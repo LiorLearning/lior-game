@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import SpeechToText from './utils/speech_to_text'
 import { Send } from 'lucide-react'
-import { AudioContext } from './utils/audio_stream'
 import { handleScreenshot } from './utils/screenshot'
 import Message from './utils/Message'
 
@@ -21,10 +20,12 @@ interface ChatProps {
 const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { messages, setMessages } = useMessageContext();
-  const { sendLog } = useWebSocketLogger();
+  const { sendLog, handleStopAudio } = useWebSocketLogger();
   const [inputMessage, setInputMessage] = useState('');
 
-  const handleRecordingStart = () => {}
+  const handleRecordingStart = () => {
+    handleStopAudio();
+  }
 
   const handleRecordingStop = async (blob: Blob) => {
     sendLog(blob);

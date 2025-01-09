@@ -49,10 +49,13 @@ export const MessageContext = createContext<MessageContextType | null>(null);
 
 const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [messages, setMessages] = useState<Message[]>([]);
+
   const setIsPlaying = (messageId: string, isPlaying: boolean) => {
     setMessages(prevMessages => 
       prevMessages.map(msg => 
-        msg.messageId === messageId ? { ...msg, isPlaying } : msg
+        msg.messageId === messageId ? 
+          { ...msg, isPlaying } : 
+          { ...msg, isPlaying: false }
       )
     );
   }
