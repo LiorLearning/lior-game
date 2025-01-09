@@ -1,4 +1,4 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { AudioProvider } from './utils/audio_stream';
 
 export interface BaseMessage {
@@ -42,6 +42,7 @@ export type Message = LogMessage | AssistanceRequestMessage | AssistanceResponse
 type MessageContextType = {
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  setIsPlaying: (messageId: string, isPlaying: boolean) => void;
 };
 
 export const MessageContext = createContext<MessageContextType | null>(null);
@@ -57,12 +58,20 @@ const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   }
 
   return (
-    <MessageContext.Provider value={{ messages, setMessages }}>
+    <MessageContext.Provider value={{ messages, setMessages, setIsPlaying }}>
       <AudioProvider clientId="12345" setIsPlaying={setIsPlaying}>
         {children}
       </AudioProvider>
     </MessageContext.Provider>
   );
+};
+
+export const useMessageContext = () => {
+  const context = useContext(MessageContext);
+  if (!context) {
+    throw new Error('useMessageContext must be used within a MessageProvider');
+  }
+  return context;
 };
 
 export { MessageProvider };

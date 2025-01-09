@@ -2,10 +2,14 @@ import React, { useContext } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MessageContext, LogMessage, AssistanceRequestMessage, AssistanceResponseMessage } from '../MessageContext';
 import { MarkdownComponent } from './mardown-utils';
+import { Volume2 } from 'lucide-react';
+import { Button } from '../ui/button';
+import { Pause } from 'lucide-react';
+import { useWebSocketLogger } from '../websocket';
 
 const Message = () => {
   const messageContext = useContext(MessageContext);
-  console.log(messageContext);
+  const { toggleAudio } = useWebSocketLogger();
 
   if (!messageContext) {
     throw new Error('Message must be used within a MessageProvider');
@@ -44,6 +48,19 @@ const Message = () => {
                 <MarkdownComponent content={(message as AssistanceResponseMessage).content!} />
               ) : (
                 <MarkdownComponent content={(message as AssistanceRequestMessage).content!} />
+              )}
+
+              {message.type === 'agent' && (
+                <div className="mt-2 flex justify-end">
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    className="rounded-xl px-2 py-1"
+                    onClick={() => toggleAudio(message)}
+                  >
+                    {message.isPlaying ? <Pause className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                  </Button>
+                </div>
               )}
             </CardContent>
           </div>

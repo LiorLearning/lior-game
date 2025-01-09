@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useContext, useRef, useState, useEffect } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { MessageContext, AssistanceRequestMessage } from './MessageContext'
+import { AssistanceRequestMessage, useMessageContext } from './MessageContext'
 import { useWebSocketLogger, WebSocketStatus } from './websocket'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,11 +19,8 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
-  const audioContext = useContext(AudioContext);
-  if (!audioContext) throw new Error('MessageCard must be used within an AudioProvider');
-
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const messageContext = useContext(MessageContext);
+  const { messages, setMessages } = useMessageContext();
   const { sendLog } = useWebSocketLogger();
   const [inputMessage, setInputMessage] = useState('');
 
@@ -42,7 +39,7 @@ const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
   };
 
   const onSendTextMessage = async () => {
-    if (!messageContext || !inputMessage.trim()) return;
+    if (!inputMessage.trim()) return;
     
     const image = await handleScreenshot(componentRef);
     const newMessage: AssistanceRequestMessage = {
@@ -54,7 +51,7 @@ const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
       gameState: JSON.stringify(gameState, null, 0),
     };
 
-    messageContext.setMessages(prev => [...prev, newMessage]);
+    setMessages(prev => [...prev, newMessage]);
     sendLog({
       ...newMessage,
       image,
@@ -79,7 +76,7 @@ const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
     observer.observe(scrollArea, { childList: true, subtree: true });
 
     return () => observer.disconnect();
-  }, [messageContext?.messages]);
+  }, [messages]);
 
   return (
     <div className="flex flex-col h-full bg-background">

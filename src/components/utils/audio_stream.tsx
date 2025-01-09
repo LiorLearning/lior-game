@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, createContext, ReactNode } from 'react';
+import React, { useState, useRef, useEffect, createContext, ReactNode, useContext } from 'react';
 
 const STREAM_CLOSE_DELAY = 2000; // Time in milliseconds to wait before closing the stream after the last chunk
 const BUFFER_QUEUE_THRESHOLD = 3; // Minimum number of chunks to queue before starting playback
@@ -293,4 +293,13 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children, clientId
       {children}
     </AudioContext.Provider>
   );
+};
+
+
+export const useAudioContext = () => {
+  const context = useContext(AudioContext);
+  if (!context) {
+    throw new Error('useAudioContext must be used within a AudioProvider');
+  }
+  return context;
 };

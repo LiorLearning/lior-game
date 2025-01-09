@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useCallback } from 'react';
-import { MessageContext, Message } from './MessageContext';
+import { MessageContext, Message, useMessageContext } from './MessageContext';
 import { WifiOff, Wifi } from 'lucide-react';
 import { AudioContext } from './utils/audio_stream';
 
@@ -58,7 +58,6 @@ class WebSocketManager {
 
     this.ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      console.log('WebSocket Message Received:', message.content);
       this.setMessages(prev => [...prev, message]);
       if (this.audioContext && SPEAKOUT && message.role == 'agent') {
         this.handlePlayAudio(message.messageId, message.content!);
@@ -93,7 +92,6 @@ class WebSocketManager {
   sendMessage(message: Message | Blob) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       if (message instanceof Blob) {
-        console.log("Message(audio): ", message);
         this.ws.send(message);
       } else {
         this.ws.send(JSON.stringify(message));
@@ -136,7 +134,7 @@ interface WebSocketProviderProps {
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ url, children }) => {
   const wsRef = useRef<WebSocketManager | null>(null);
   const [isConnected, setIsConnected] = React.useState(false);
-  const messageContext = useContext(MessageContext);
+  const { messages, setMessages, setIsPlaying } = useMessageContext();
   const audioContext = useContext(AudioContext);
   if (!audioContext) {
     throw new Error('MessageCard must be used within an AudioProvider');
@@ -144,6 +142,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ url, child
 
   const handleStopAudio = (message: Message) => {
     audioContext.stopAudio(message.messageId);
+    setIsPlaying(message.messageId, false);
   };
 
   const handlePlayAudio = (messageId: string, messageText: string) => {
@@ -152,28 +151,15 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ url, child
     }
 
     // Update messages state immediately
-    messageContext?.setMessages(prevMessages => 
-      prevMessages.map(msg => 
-        msg.messageId === messageId
-          ? { ...msg, isPlaying: true }
-          : { ...msg, isPlaying: false }
-      )
-    );
+    setIsPlaying(messageId, true);
 
     audioContext.playAudio(messageId, messageText);
   };
 
   const toggleAudio = useCallback(async (message: Message) => {
     const isPlaying = message.isPlaying;
-    console.log(`${isPlaying ? 'Pausing' : 'Playing'} audio for message ID:`, message.messageId);
 
-    messageContext?.setMessages(prevMessages => 
-      prevMessages.map(msg => 
-        msg.messageId === message.messageId 
-          ? { ...msg, isPlaying: !isPlaying }
-          : msg
-      )
-    );
+    setIsPlaying(message.messageId, !isPlaying);
 
     if (isPlaying) {
       handleStopAudio(message);
@@ -190,18 +176,16 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ url, child
   }, []);
 
   useEffect(() => {
-    if (messageContext) {
-      wsRef.current = new WebSocketManager({ 
-        url, 
-        onConnectionChange: setIsConnected, 
-        setMessages: messageContext.setMessages,
-        handlePlayAudio: handlePlayAudio
-      });
-      if (audioContext) {
-        wsRef.current.setAudioContext(audioContext);
-      }
-      wsRef.current.connect();
+    wsRef.current = new WebSocketManager({ 
+      url, 
+      onConnectionChange: setIsConnected, 
+      setMessages: setMessages,
+      handlePlayAudio: handlePlayAudio
+    });
+    if (audioContext) {
+      wsRef.current.setAudioContext(audioContext);
     }
+    wsRef.current.connect();
 
     return () => {
       wsRef.current?.disconnect();
@@ -213,11 +197,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ url, child
   };
 
   const addToChat = (message: Message) => {
+    setMessages(prev => [...prev, message]);
     if (SPEAKOUT) {
       handlePlayAudio(message.messageId, message.content!);
-    }
-    if (messageContext) {
-      messageContext.setMessages(prev => [...prev, message]);
     }
     wsRef.current?.sendMessage(message);
   };

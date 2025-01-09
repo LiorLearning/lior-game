@@ -39,6 +39,7 @@ export const SandboxProvider: React.FC<{
       sendLog(adminMessage);
     } else if (role === 'agent') {
       const agentMessage = {
+        messageId: crypto.randomUUID(),
         type: 'agent',
         timestamp: new Date().toISOString(),
         content: content,
