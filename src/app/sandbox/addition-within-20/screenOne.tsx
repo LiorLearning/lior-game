@@ -4,10 +4,11 @@ import { useSoundEffects } from "./utils/sound";
 import { useEffect, useRef, useState } from "react";
 import { Cross } from "lucide-react";
 import { Button } from "@/components/custom_ui/button";
-import { Position, Vector, GameProps } from "./components/types";
+import { Position, Vector } from "./components/types";
 import { Catapult } from "./components/catapult";
 import { Counter } from "./components/counter";
 import { ShootButton } from "./components/shoot-button";
+import { COLORS } from "./utils/constants";
 
 interface FirstProps {
   sendAdminMessage: (agent: string, message: string) => void;
@@ -838,7 +839,7 @@ export default function First({ sendAdminMessage, visible }: FirstProps) {
         }
       }));
       if (!gameStartedRef.current) {
-        sendAdminMessage('agent', `Let's play a game to solve this? Imagine this like you have ${maxGreenMarbles} green, ${maxBlueMarbles} blue marbles and slingshots!!`);
+        sendAdminMessage('agent', `Let's play a game to solve this, imagine you have ${maxGreenMarbles} green marbles, ${maxBlueMarbles} blue marbles and slingshots. Click on proceed to move forward`);
         gameStartedRef.current = true;
       }
 
@@ -893,7 +894,7 @@ export default function First({ sendAdminMessage, visible }: FirstProps) {
       sendAdminMessage('agent', `Oops! The container is full. Let's count how many marbles we have now`);
 
     } else if (step === 5) {
-      sendAdminMessage('agent', 'Look we made it easy');
+      sendAdminMessage('agent', `Look we made it easy. ${maxGreenMarbles} + ${maxBlueMarbles} is same as 10+${maxGreenMarbles + maxBlueMarbles - 10}`);
       Matter.Composite.remove(worldRef.current!, leftPlatformRef1.current!);
       Matter.Composite.remove(worldRef.current!, leftPlatformRef2.current!);
       Matter.Composite.remove(worldRef.current!, rightPlatformRef2.current!);
@@ -911,8 +912,10 @@ export default function First({ sendAdminMessage, visible }: FirstProps) {
       worldRef.current = Matter.World.add(worldRef.current!, finalContainer);
 
       worldRef.current = Matter.World.add(worldRef.current, balls);
+    } else if (step === 7) {
+      sendAdminMessage('agent', `Let us empty the marbles in one place to add them`);
     } else if (step === 8) {
-      
+      sendAdminMessage('agent', `Click on plus to count the number of marbles we have collected`);
       Matter.Composite.remove(worldRef.current!, containerRef.current!);
       Matter.Composite.remove(worldRef.current!, rightPlatformRef1.current!);
     } else if (step === 9) {
@@ -962,13 +965,19 @@ export default function First({ sendAdminMessage, visible }: FirstProps) {
   return (
     <div className="relative w-[800px] mx-auto ">
       <section className="mt-16 h-52 flex flex-col justify-center">
-        <h3 className="text-5xl font-bold text-center pb-10">
-          {`${maxGreenMarbles} + ${maxBlueMarbles} = ?`}
-        </h3>
-        <div className={`w-2/3 mx-auto text-2xl ${currentStep===4? 'bg-purple-600' : 'bg-purple-100'} border-2 shadow-[-5px_5px_0_0] border-black p-4 mb-5`} style={{
-          fontSize: 26
+        <div className="text-5xl font-bold text-center pb-10">
+          <h3 className="border-2 border-black shadow-[-5px_5px_0_0] w-[40%] mx-auto" style={{
+            backgroundColor: COLORS.white,
+          }}>
+            {`${maxGreenMarbles} + ${maxBlueMarbles} = ?`}
+          </h3>
+        </div>
+        <div className={`w-2/3 mx-auto text-3xl border-2 shadow-[-5px_5px_0_0] border-black p-4 mb-5`} style={{
+          backgroundColor: currentStep === 4 ? COLORS.blue : COLORS.white
         }}>
-        <p className={`font-bold text-center ${currentStep===4? 'text-purple-100' : ' text-purple-600'}`}>
+        <p className={`text-center font-jersey`} style={{
+          color: currentStep === 4 ? COLORS.white : COLORS.blue
+        }}>
           {(() => {
             switch (currentStep) {
               case 0:
@@ -1079,7 +1088,7 @@ export default function First({ sendAdminMessage, visible }: FirstProps) {
         }
 
         { currentStep === 8 && (
-          <div className="absolute h-10 flex flex-col w-full justify-center items-center top-10 left-1/2 transform -translate-x-1/2 gap-2">
+          <div className="absolute h-24 flex flex-col w-full justify-center items-center top-10 left-1/2 transform -translate-x-1/2 gap-2">
             <Counter onIncrement={() => handlefinalCount(1)} onDecrement={() => handlefinalCount(-1)} />
           </div>
         )}
@@ -1096,19 +1105,24 @@ export default function First({ sendAdminMessage, visible }: FirstProps) {
           </div>
         )}
 
-        {STEPS_WITH_PROCEED.includes(currentStep) && (
-          <>
-            <div className="absolute right-5">
-              <Button 
-                onClick={() => handleProceed(currentStep)} 
-                className="text-2xl bg-purple-100 border-2 shadow-[-5px_5px_0_0] shadow-black border-black p-2 px-6 mb-5 text-purple-600 rounded-none"
-              >
-                Proceed &gt;&gt;
-              </Button>
-            </div>
-          </>
-        )}
       </div>
-    </div>  
+      {STEPS_WITH_PROCEED.includes(currentStep) && (
+        <>
+          <div className="absolute right-[-40px] top-[-24px]">
+            <Button 
+              onClick={() => handleProceed(currentStep)} 
+              className="text-lg bg-purple-100 border-2 shadow-[-5px_5px_0_0] shadow-black border-black p-2 px-6 mb-5 rounded-none"
+              style={{
+                backgroundColor: COLORS.white,
+              }}
+            >
+              <p className="font-bold font-jersey" style={{
+                color: COLORS.blue
+              }}>Proceed &gt;&gt;</p>
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
   );
 };
