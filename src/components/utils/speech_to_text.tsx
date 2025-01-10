@@ -134,7 +134,7 @@ const SpeechToText: React.FC<SpeechToTextProps> = ({ onRecordingStart, onRecordi
 
     } catch (err) {
       console.error('Microphone access error:', err);
-      alert('Unable to access the microphone. Please check permissions and browser support.');
+      alert(`Unable to access the microphone. Please check permissions and browser support: ${err}`);
       setIsRecording(false);
     }
   };
