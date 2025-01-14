@@ -37,6 +37,9 @@ Learning Objectives:
 export type GameScreen = 'first' | 'second';
 
 export interface GameState1 {
+  maxGreenMarbles: number;
+  maxBlueMarbles: number;
+  maxBlackMarbles: number;
   greenScore: number;
   blueScore: number;
   blackScore: number;
@@ -51,6 +54,9 @@ export interface GameState1 {
 
 
 export interface GameState2 {
+  maxGreenMarbles: number;
+  maxBlueMarbles: number;
+  maxBlackMarbles: number;
   greenMarblesCount: number;
   blueMarblesCount: number;
   blackMarblesCount: number;
@@ -59,19 +65,16 @@ export interface GameState2 {
 
 export interface GameState {
   screen: GameScreen;
-  maxGreenMarbles: number;
-  maxBlueMarbles: number;
-  maxBlackMarbles: number;
   state1: GameState1;
   state2: GameState2;
 }
 
 export const initialGameState: GameState = {
   screen: 'first',
-  maxGreenMarbles: MAX_GREEN_MARBLES,
-  maxBlueMarbles: MAX_BLUE_MARBLES,
-  maxBlackMarbles: MAX_BLACK_MARBLES,
   state1: {
+    maxGreenMarbles: MAX_GREEN_MARBLES,
+    maxBlueMarbles: MAX_BLUE_MARBLES,
+    maxBlackMarbles: MAX_BLACK_MARBLES,
     greenScore: MAX_GREEN_MARBLES,
     blueScore: MAX_BLUE_MARBLES,
     blackScore: 0,
@@ -84,6 +87,9 @@ export const initialGameState: GameState = {
     additionStarted: false
   },
   state2: {
+    maxGreenMarbles: 7,
+    maxBlueMarbles: 8,
+    maxBlackMarbles: 10,
     greenMarblesCount: 0,
     blueMarblesCount: 0,
     blackMarblesCount: 0,

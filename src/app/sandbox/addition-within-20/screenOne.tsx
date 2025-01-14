@@ -18,8 +18,20 @@ interface FirstProps {
 export default function First({ sendAdminMessage, visible }: FirstProps) {
   const { gameStateRef, setGameStateRef } = useGameState();
   const soundEffects = useSoundEffects();
-  const { greenScore, blueScore, containerScore, activePhase, currentStep, finalAnswer, clickDisabled, showAddButton, additionStarted } = gameStateRef.current.state1;
-  const { maxGreenMarbles, maxBlueMarbles } = gameStateRef.current;
+  const { 
+    greenScore, 
+    blueScore, 
+    containerScore, 
+    activePhase, 
+    currentStep, 
+    finalAnswer, 
+    clickDisabled, 
+    showAddButton, 
+    additionStarted,
+    maxGreenMarbles, 
+    maxBlueMarbles, 
+    maxBlackMarbles 
+  } = gameStateRef.current.state1;
 
   const sceneRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Matter.Engine | null>(null);
@@ -963,165 +975,166 @@ export default function First({ sendAdminMessage, visible }: FirstProps) {
   if (!visible) return null;
 
   return (
-    <div className="relative w-[800px] mx-auto ">
-      <section className="mt-16 h-52 flex flex-col justify-center">
-        <div className="text-5xl font-bold text-center pb-10">
-          <h3 className="border-2 border-black shadow-[-5px_5px_0_0] w-[40%] mx-auto" style={{
-            backgroundColor: COLORS.white,
+    <div className="relative w-[800px] mx-auto flex flex-col min-h-screen">
+      <div className="flex-1 overflow-y-auto pb-20"> {/* Added padding bottom for button space */}
+        <section className="mt-16 h-52 flex flex-col justify-center">
+          <div className="text-5xl font-bold text-center pb-10">
+            <h3 className="border-2 border-black shadow-[-5px_5px_0_0] w-[40%] mx-auto" style={{
+              backgroundColor: COLORS.white,
+            }}>
+              {`${maxGreenMarbles} + ${maxBlueMarbles} = ?`}
+            </h3>
+          </div>
+          <div className={`w-2/3 mx-auto text-3xl border-2 shadow-[-5px_5px_0_0] border-black p-4 mb-5`} style={{
+            backgroundColor: currentStep === 4 ? COLORS.blue : COLORS.white
           }}>
-            {`${maxGreenMarbles} + ${maxBlueMarbles} = ?`}
-          </h3>
-        </div>
-        <div className={`w-2/3 mx-auto text-3xl border-2 shadow-[-5px_5px_0_0] border-black p-4 mb-5`} style={{
-          backgroundColor: currentStep === 4 ? COLORS.blue : COLORS.white
-        }}>
-        <p className={`text-center font-jersey`} style={{
-          color: currentStep === 4 ? COLORS.white : COLORS.blue
-        }}>
-          {(() => {
-            switch (currentStep) {
-              case 0:
-                return `Let's play a game to solve this. Imagine you have ${maxGreenMarbles} green, ${maxBlueMarbles} blue marbles and a slingshot!!`; 
-              case 1:
-                return "And a container to collect the marbles";
-              case 2:
-                if(greenScore === maxGreenMarbles) {
-                  return <>Let's start! <br/> Step 1 : Finish shooting the green marbles into the marble holder!  </>;
-                } else {
-                  return "Keep shooting until the container is full!";
-                }
-              case 3:
-                return <> We have filled all {maxGreenMarbles} green ones. <br/> Step 2 : Let's fill the blue ones.</>;
-              case 4: 
-                return "Oops! The container is full. Let's see how many marbles we have";
-              case 5:
-                return `Look! ${maxGreenMarbles} + ${maxBlueMarbles} is same as 10+${maxGreenMarbles + maxBlueMarbles - 10}`;
-              case 6:
-                return `Step 3 : Click on empty to add 10+${maxGreenMarbles + maxBlueMarbles - 10}`;
-              case 7:
-                return "Let us see how many marbles we have collected. Let's empty them in a box";
-              case 8:
-                return "Step 4 : Let us count the total marbles in the box";
-              case 9:
-                return "Great Job! You calculated the answer"
-            }
-          })()}
-        </p>
-        </div>
-      </section>
+          <p className={`text-center font-jersey`} style={{
+            color: currentStep === 4 ? COLORS.white : COLORS.blue
+          }}>
+            {(() => {
+              switch (currentStep) {
+                case 0:
+                  return `Let's play a game to solve this. Imagine you have ${maxGreenMarbles} green, ${maxBlueMarbles} blue marbles and a slingshot!!`; 
+                case 1:
+                  return "And a container to collect the marbles";
+                case 2:
+                  if(greenScore === maxGreenMarbles) {
+                    return <>Let's start! <br/> Step 1 : Finish shooting the green marbles into the marble holder!  </>;
+                  } else {
+                    return "Keep shooting until the container is full!";
+                  }
+                case 3:
+                  return <> We have filled all {maxGreenMarbles} green ones. <br/> Step 2 : Let's fill the blue ones.</>;
+                case 4: 
+                  return "Oops! The container is full. Let's see how many marbles we have";
+                case 5:
+                  return `Look! ${maxGreenMarbles} + ${maxBlueMarbles} is same as 10+${maxGreenMarbles + maxBlueMarbles - 10}`;
+                case 6:
+                  return `Step 3 : Click on empty to add 10+${maxGreenMarbles + maxBlueMarbles - 10}`;
+                case 7:
+                  return "Let us see how many marbles we have collected. Let's empty them in a box";
+                case 8:
+                  return "Step 4 : Let us count the total marbles in the box";
+                case 9:
+                  return "Great Job! You calculated the answer"
+              }
+            })()}
+          </p>
+          </div>
+        </section>
 
-      <div className="relative w-full">
-        {currentStep < 5 &&
-          <div className="absolute text-5xl font-bold px-4 py-2 bg-white border border-green-500 z-10 text-green-500" style={{
-            top: slingPosition[0].y - 50,
-            left: slingPosition[0].x - 160
-          }}>
-            {greenScore}
-          </div>
-        }
-        {currentStep <= 5 &&
-          <div className="absolute text-5xl font-bold px-4 py-2 bg-white border border-blue-500 z-10 text-blue-500" style={{
-            top: slingPosition[1].y - 50,
-            left: slingPosition[1].x + 220
-          }}>
-            {blueScore}
-          </div>
-        }
-
-          {currentStep > 1 && currentStep <= 5 &&
-          <div className={`absolute ${currentStep === 5 ? "left-1/2 top-[2.5rem]" :  "bottom-1/4 left-1/3" } transform -translate-x-1/3 -translate-y-1/4  text-5xl font-bold px-4 py-2 bg-white border border-purple-500 z-10 text-purple-500`}>
-            {containerScore}
-          </div>
+        <div className="relative w-full">
+          {currentStep < 5 &&
+            <div className="absolute text-5xl font-bold px-4 py-2 bg-white border border-green-500 z-10 text-green-500" style={{
+              top: slingPosition[0].y - 50,
+              left: slingPosition[0].x - 160
+            }}>
+              {greenScore}
+            </div>
+          }
+          {currentStep <= 5 &&
+            <div className="absolute text-5xl font-bold px-4 py-2 bg-white border border-blue-500 z-10 text-blue-500" style={{
+              top: slingPosition[1].y - 50,
+              left: slingPosition[1].x + 220
+            }}>
+              {blueScore}
+            </div>
           }
 
-          {currentStep < 5 && <>
-            <Catapult position={slingPosition[0]} type="half" side="left" />
-            <Catapult position={slingPosition[0]} type="full" side="left" />
-            <Catapult position={slingPosition[1]} type="half" side="right" />
-            <Catapult position={slingPosition[1]} type="full" side="right" />
-          </>}
+            {currentStep > 1 && currentStep <= 5 &&
+            <div className={`absolute ${currentStep === 5 ? "left-1/2 top-[2.5rem]" :  "bottom-1/4 left-1/3" } transform -translate-x-1/3 -translate-y-1/4  text-5xl font-bold px-4 py-2 bg-white border border-purple-500 z-10 text-purple-500`}>
+              {containerScore}
+            </div>
+            }
+
+            {currentStep < 5 && <>
+              <Catapult position={slingPosition[0]} type="half" side="left" />
+              <Catapult position={slingPosition[0]} type="full" side="left" />
+              <Catapult position={slingPosition[1]} type="half" side="right" />
+              <Catapult position={slingPosition[1]} type="full" side="right" />
+            </>}
 
 
-        <div
-          ref={sceneRef}
-          className="w-[800px] h-[600px] z-30 mx-auto rounded-lg bg-transparent"
-        />
-        {currentStep === 1 &&
-          <div className="absolute right-20 top-80 w-60 mx-auto text-xl  bg-purple-100 border-2 shadow-[-5px_5px_0_0] border-black p-1">
-            <p className="font-bold text-center text-purple-600">
-              Can hold a maximum of 10 marbles
-            </p>
-          </div>
-        }
+          <div
+            ref={sceneRef}
+            className="w-[800px] h-[600px] z-30 mx-auto rounded-lg bg-transparent"
+          />
+          {currentStep === 1 &&
+            <div className="absolute right-20 top-80 w-60 mx-auto text-xl  bg-purple-100 border-2 shadow-[-5px_5px_0_0] border-black p-1">
+              <p className="font-bold text-center text-purple-600">
+                Can hold a maximum of 10 marbles
+              </p>
+            </div>
+          }
 
-        {currentStep === 2 &&
-            <ShootButton 
-              onClick={launchGreen}
-              disabled={clickDisabled || activePhase !== 'left'}
-              position="left"
-            />
-        }
+          {currentStep === 2 &&
+              <ShootButton 
+                onClick={launchGreen}
+                disabled={clickDisabled || activePhase !== 'left'}
+                position="left"
+              />
+          }
 
-        {currentStep === 3 &&
-            <ShootButton 
-              onClick={launchBlue}
-              disabled={clickDisabled || activePhase !== 'right'}
-              position="right"
-            />
-        }
+          {currentStep === 3 &&
+              <ShootButton 
+                onClick={launchBlue}
+                disabled={clickDisabled || activePhase !== 'right'}
+                position="right"
+              />
+          }
 
-        {currentStep === 5 &&
-          <span className="absolute right-1/4 top-[1.6rem] text-black fill-black">
-            <Cross size={56} fill="#a855f7" />
-          </span>
-        }
+          {currentStep === 5 &&
+            <span className="absolute right-1/4 top-[1.6rem] text-black fill-black">
+              <Cross size={56} fill="#a855f7" />
+            </span>
+          }
 
-        {currentStep === 6 &&
-          <Button
-            onClick={handleAddition}
-            disabled={currentStep != 6}
-            className={`absolute right-5 top-52 text-2xl px-5 shadow-[-3px_3px_0_0] shadow-purple-500 border bg-white border-purple-500 text-purple-500 font-bold hover:opacity-90 rounded-none
-              ${currentStep != 6 ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            Empty
-          </Button>
-        }
-
-        { currentStep === 8 && (
-          <div className="absolute h-24 flex flex-col w-full justify-center items-center top-10 left-1/2 transform -translate-x-1/2 gap-2">
-            <Counter onIncrement={() => handlefinalCount(1)} onDecrement={() => handlefinalCount(-1)} />
-          </div>
-        )}
-
-        {currentStep === 9 && (
-          <div className="absolute h-30 flex flex-col w-full justify-center items-center top-10 left-1/2 transform -translate-x-1/2 gap-2">
-            <p className="text-7xl text-center font-bold text-purple-500">
-              {maxGreenMarbles + maxBlueMarbles}
-            </p>
-            <p className="text-7xl text-center font-bold text-black">
-              great job! <br/> correct answer
-            </p>
-            <Button onClick={() => setGameStateRef(prevState => ({...prevState, screen: 'second'}))} className="text-2xl bg-purple-500 text-white">Next</Button>
-          </div>
-        )}
-
-      </div>
-      {STEPS_WITH_PROCEED.includes(currentStep) && (
-        <>
-          <div className="absolute right-[-40px] top-[-24px]">
-            <Button 
-              onClick={() => handleProceed(currentStep)} 
-              className="text-lg bg-purple-100 border-2 shadow-[-5px_5px_0_0] shadow-black border-black p-2 px-6 mb-5 rounded-none"
-              style={{
-                backgroundColor: COLORS.white,
-              }}
+          {currentStep === 6 &&
+            <Button
+              onClick={handleAddition}
+              disabled={currentStep != 6}
+              className={`absolute right-5 top-52 text-2xl px-5 shadow-[-3px_3px_0_0] shadow-purple-500 border bg-white border-purple-500 text-purple-500 font-bold hover:opacity-90 rounded-none
+                ${currentStep != 6 ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <p className="font-bold font-jersey" style={{
-                color: COLORS.blue
-              }}>Proceed &gt;&gt;</p>
+              Empty
             </Button>
-          </div>
-        </>
+          }
+
+          { currentStep === 8 && (
+            <div className="absolute h-24 flex flex-col w-full justify-center items-center top-10 left-1/2 transform -translate-x-1/2 gap-2">
+              <Counter onIncrement={() => handlefinalCount(1)} onDecrement={() => handlefinalCount(-1)} />
+            </div>
+          )}
+
+          {currentStep === 9 && (
+            <div className="absolute h-30 flex flex-col w-full justify-center items-center top-10 left-1/2 transform -translate-x-1/2 gap-2">
+              <p className="text-7xl text-center font-bold text-purple-500">
+                {maxGreenMarbles + maxBlueMarbles}
+              </p>
+              <p className="text-7xl text-center font-bold text-black">
+                great job! <br/> correct answer
+              </p>
+              <Button onClick={() => setGameStateRef(prevState => ({...prevState, screen: 'second'}))} className="text-2xl bg-purple-500 text-white">Next</Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Fixed proceed button at bottom */}
+      {STEPS_WITH_PROCEED.includes(currentStep) && (
+        <div className="fixed bottom-5 left-2/3 transform -translate-x-1/2 z-50 flex justify-center items-center">
+          <Button 
+            onClick={() => handleProceed(currentStep)} 
+            className="text-lg bg-purple-100 border-2 shadow-[-5px_5px_0_0] shadow-black border-black p-2 px-6 rounded-none"
+            style={{
+              backgroundColor: COLORS.white,
+            }}
+          >
+            <p className="font-bold font-jersey" style={{
+              color: COLORS.blue
+            }}>Proceed &gt;&gt;</p>
+          </Button>
+        </div>
       )}
     </div>
   );

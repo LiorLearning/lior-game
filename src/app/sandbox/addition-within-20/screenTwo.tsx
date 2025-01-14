@@ -11,12 +11,20 @@ import { Button } from "@/components/custom_ui/button";
 
 export default function Second({ sendAdminMessage }: GameProps) {
   const { gameStateRef, setGameStateRef } = useGameState();
-  const { greenMarblesCount, blueMarblesCount, blackMarblesCount, showFinalAnswer } = gameStateRef.current.state2;
-  const { maxGreenMarbles, maxBlueMarbles, maxBlackMarbles } = gameStateRef.current;
+  const { 
+    greenMarblesCount, 
+    blueMarblesCount, 
+    blackMarblesCount, 
+    showFinalAnswer,
+    maxGreenMarbles, 
+    maxBlueMarbles, 
+    maxBlackMarbles 
+  } = gameStateRef.current.state2;
   const totalMarbles = maxGreenMarbles + maxBlueMarbles;
   const [answer, setAnswer] = useState('');
   const hasGameStarted = useRef(false);
   const gameFinished = useRef(false);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const handleMarbleClick = (color: 'green' | 'blue') => {
     setGameStateRef(prev => ({
@@ -66,6 +74,7 @@ export default function Second({ sendAdminMessage }: GameProps) {
     if (blackMarblesCount === 10) {
       sendAdminMessage('agent', "Great, you made a group of 10. Now add the remaining marbles to get to the answer");
     }
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [blackMarblesCount])
 
   const handleVerifyAnswer = () => {
@@ -241,6 +250,7 @@ export default function Second({ sendAdminMessage }: GameProps) {
             </div>
         )}
         {gameFinished.current && <SuccessAnimation />}
+        <div ref={bottomRef} style={{ height: 0 }} />
     </div>
  )
 }

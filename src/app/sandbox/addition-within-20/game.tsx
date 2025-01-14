@@ -8,6 +8,8 @@ import { COLORS } from './utils/constants';
 
 function Game({ sendAdminMessage }: GameProps) {
   const { gameStateRef } = useGameState();
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
   
   return (
     <div className="h-full w-full bg-white">

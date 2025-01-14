@@ -7,7 +7,7 @@ import { COLORS } from "../utils/constants";
 
 export default function ComparisonPage({}) {
   const { gameStateRef, setGameStateRef } = useGameState();
-  const { maxGreenMarbles, maxBlueMarbles } = gameStateRef.current;
+  const { maxGreenMarbles, maxBlueMarbles } = gameStateRef.current.state1;
 
   const sceneRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Matter.Engine | null>(null);
@@ -427,7 +427,7 @@ export default function ComparisonPage({}) {
         />
 
       </div>
-      <div className="absolute right-[-40px] top-[-56px]">
+      <div className="fixed bottom-5 left-2/3 transform -translate-x-1/2 z-50 flex justify-center items-center">
         <Button 
           onClick={() => handleProceed()} 
           className="text-lg border-2 shadow-[-5px_5px_0_0] shadow-black border-black p-2 px-6 rounded-none"
