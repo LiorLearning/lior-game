@@ -3,7 +3,7 @@ import Header from '../components/header';
 import { BaseProps, COLORS } from '../utils/types';
 import { StepModule } from '../components/stepHeader';
 import { ChocolateBarWithFraction } from '../components/chocolate-bar';
-import { goToStep, goToScreen, nextStep } from '../utils/helper';
+import { goToStep, goToScreen } from '../utils/helper';
 import ProceedButton from '../components/proceed-button';
 import MultiplesGrid from '../components/multiple-grids';
 import { Question } from '../components/question';

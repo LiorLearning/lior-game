@@ -90,7 +90,7 @@ const GCDMultiplesGrid = ({ fraction1, fraction2, gcd, onSuccess, onSelectKnife,
   return (
     <div className="flex flex-col items-center gap-4 max-w-xl mx-auto m-4">
       {renderKnifeRow(maxMultiple, onSelectKnife)}
-      {renderMultiplesRow(fraction1, getMultiples, selectedMultiple, false)}
+      {renderMultiplesRow(fraction1, getMultiples, selectedMultiple, true)}
       {renderMultiplesRow(fraction2, getMultiples, selectedMultiple, false)}
       <div className="flex items-center gap-2 mt-4">
         <span className="text-2xl">Common denominator is</span>
@@ -202,26 +202,31 @@ const MultiplesInputRow: React.FC<{
 }> = ({ fraction, maxMultiple, lcd, ecd, onSuccess, showColor }) => {
   const [multiples, setMultiples] = useState<string[]>(Array(maxMultiple).fill(''));
 
-  const getInputColor = (multiple: string, index: number) => {
-    const answer = parseInt(fraction.denominator) * (index + 1);
-    
-    if (multiple === '' || answer.toString().length !== multiple.length) {
+  const getInputColor = (multiple: string, index: number, showColor: boolean) => {
+    const answer = (parseInt(fraction.denominator) * (index + 1)).toString();
+
+    if (showColor) {
+      if (multiple === lcd.toString()) {
+        return COLORS.lightPurple;
+      } else if (multiple === ecd.toString()) {
+        return COLORS.lightGreen;
+      }
+      return COLORS.gray;
+    }
+
+    if (multiple !== '') {
+      if (multiple.length >= answer.length) {
+        if (multiple === answer) {
+          return COLORS.lightGreen;
+        } else {
+          return COLORS.lightRed;
+        }
+      } else {
+        return COLORS.white;
+      }
+    } else {
       return COLORS.white;
     }
-    
-    if (answer !== parseInt(multiple)) {
-      return COLORS.lightRed;
-    }
-    
-    if (multiple === lcd.toString()) {
-      return COLORS.lightPurple;
-    }
-    
-    if (multiple === ecd.toString()) {
-      return COLORS.lightGreen;
-    }
-    
-    return COLORS.gray;
   };
 
   useEffect(() => {
@@ -253,7 +258,7 @@ const MultiplesInputRow: React.FC<{
             className="w-12 h-12 rounded-md border-2 text-center"
             value={multiple}
             style={{
-              backgroundColor: showColor ? getInputColor(multiple, index) : COLORS.gray
+              backgroundColor: getInputColor(multiple, index, showColor)
             }}
             onChange={(e) => {
               setMultiples(prev => {
