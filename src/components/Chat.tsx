@@ -92,21 +92,25 @@ const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
 
       <div className="border-t p-4">
         <div className="flex items-center gap-2">
-          <Input 
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && onSendTextMessage()}
-            placeholder="Type your message..."
-            className="flex-1 rounded-xl"
-          />
-          <Button 
-            onClick={onSendTextMessage}
-            size="icon"
-            className="rounded-2xl bg-primary-foreground text-primary hover:bg-primary hover:text-primary-foreground"
-          >
-            <Send className="h-5 w-4" />
-          </Button>
-          <div className="relative w-1/2">
+          <div className="relative w-2/3">
+            <Input 
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && onSendTextMessage()}
+              placeholder="Type your message..."
+              className="flex-1 rounded-xl pr-10 py-4 h-12"
+            />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute right-2 top-1/2 -translate-y-1/2"
+              onClick={onSendTextMessage}
+              disabled={!inputMessage.trim()}
+            >
+              <Send className="h-5 w-5 text-muted-foreground" />
+            </Button>
+          </div>
+          <div className="relative w-1/3">
             <SpeechToText 
               onRecordingStart={handleRecordingStart} 
               onRecordingStop={handleRecordingStop}
