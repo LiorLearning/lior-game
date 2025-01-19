@@ -1,11 +1,11 @@
 export { Button } from './button';
 export { Input } from './input';
-export { Card } from './card';
+export { Card, CardContent, CardHeader, CardTitle, CardDescription } from './card';
 export { Slider } from './slider';
 export { Switch } from './switch';
-export { Select } from './select';
+export { Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from './select';
 export { Accordion } from './accordion';
-export { DropdownMenu } from './dropdown-menu';
+export { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './dropdown-menu';
 export { ScrollArea } from './scroll-area';
 export { Toggle } from './toggle';
 export { ToggleGroup } from './toggle-group';
