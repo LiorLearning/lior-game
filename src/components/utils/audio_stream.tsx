@@ -27,27 +27,56 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children, clientId
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const streamCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Function to unlock AudioContext on user interaction
-  const unlockAudioContext = () => {
-    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-      audioContextRef.current.resume().then(() => {
-        console.log('AudioContext resumed on user interaction:', audioContextRef.current?.state);
-      });
-    }
-  };
-
-  // Add event listeners for user interaction to unlock AudioContext
+  // Initialize AudioContext when the component mounts
   useEffect(() => {
-    ['touchstart', 'touchend', 'mousedown', 'keydown'].forEach((event) => {
-      window.addEventListener(event, unlockAudioContext, false);
-    });
+    try {
+      const options = {
+        sampleRate: 24000,
+        latencyHint: 'interactive' as AudioContextLatencyCategory,
+      };
 
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)(options);
+
+      // Attempt to resume the AudioContext
+      if (audioContextRef.current.state === 'suspended') {
+        audioContextRef.current.resume().then(() => {
+          console.log('AudioContext initialized and resumed:', audioContextRef.current?.state);
+        });
+      }
+    } catch (error) {
+      console.error('Failed to create AudioContext:', error);
+    }
+
+    // Cleanup function to close AudioContext
     return () => {
-      ['touchstart', 'touchend', 'mousedown', 'keydown'].forEach((event) => {
-        window.removeEventListener(event, unlockAudioContext, false);
-      });
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
     };
   }, []);
+
+  // // Function to unlock AudioContext on user interaction
+  // const unlockAudioContext = () => {
+  //   if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+  //     audioContextRef.current.resume().then(() => {
+  //       console.log('AudioContext resumed on user interaction:', audioContextRef.current?.state);
+  //     });
+  //   }
+  // };
+
+  // // Add event listeners for user interaction to unlock AudioContext
+  // useEffect(() => {
+  //   ['touchstart', 'touchend', 'mousedown', 'keydown'].forEach((event) => {
+  //     window.addEventListener(event, unlockAudioContext, false);
+  //   });
+
+  //   return () => {
+  //     ['touchstart', 'touchend', 'mousedown', 'keydown'].forEach((event) => {
+  //       window.removeEventListener(event, unlockAudioContext, false);
+  //     });
+  //   };
+  // }, []);
 
   /**
    * Initiates audio playback by connecting to the WebSocket.
@@ -294,7 +323,6 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children, clientId
     </AudioContext.Provider>
   );
 };
-
 
 export const useAudioContext = () => {
   const context = useContext(AudioContext);

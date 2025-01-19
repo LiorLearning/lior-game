@@ -5,6 +5,7 @@ import FourthScreen from './screen/fourth';
 import FifthScreen from './screen/fifth';
 import SixthScreen from './screen/sixth';
 import { useGameState } from './state-utils';
+import { DevHelper } from './utils/helper';
 import { useEffect, useRef } from 'react';
 
 interface GameProps {
@@ -31,6 +32,7 @@ export default function Game({sendAdminMessage}: GameProps) {
 
   return (
     <div className="mx-auto game font-jersey">
+      <DevHelper />
       {/* Game screens */}
       {screen === 'first' && <FirstScreen sendAdminMessage={sendAdminMessage} />}
       {screen === 'second' && <SecondScreen sendAdminMessage={sendAdminMessage} />}
