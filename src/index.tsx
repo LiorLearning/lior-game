@@ -28,7 +28,7 @@ export const useSandboxContext = () => {
 };
 
 export const LiorGameProvider = (
-  props: { children: ReactNode, wsUrl: string, gameState: any, desc: string }
+  props: { children: ReactNode, wsUrl: string, gameState?: any, desc?: string }
 ) => <LiorGameProviderComponent {...props} />;
 
 export const useLiorGame = () => useLiorGameHook();
