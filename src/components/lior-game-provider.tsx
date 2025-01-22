@@ -16,8 +16,8 @@ function keepAlive() {
 export const LiorGameProvider: React.FC<{ 
   children: ReactNode,
   wsUrl: string,
-  gameState: any,
-  desc: string
+  gameState?: any,
+  desc?: string
 }> = ({ 
   children, 
   wsUrl,
@@ -33,7 +33,7 @@ export const LiorGameProvider: React.FC<{
   return (
     <MessageProvider>
       <WebSocketProvider url={wsUrl}>
-        <SandboxProvider gameState={gameState} desc={desc}>
+        <SandboxProvider gameState={gameState ?? {}} desc={desc ?? ''}>
           {children}
         </SandboxProvider>
       </WebSocketProvider>

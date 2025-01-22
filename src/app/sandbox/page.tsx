@@ -5,7 +5,6 @@ import { LiorGameProvider } from '@/components/lior-game-provider';
 import Game from './game/game';
 import { useSandboxContext } from '@/components/sandbox';
 import { GameStateProvider, useGameState } from './game/state-utils';
-import { desc } from './game/game-state';
 
 function LiorGameWrapper() {
   const { sendAdminMessage } = useSandboxContext();
@@ -13,10 +12,11 @@ function LiorGameWrapper() {
 }
 
 function GameWrapper() {
-  const { gameStateRef } = useGameState();
+  const { gameStateRef, getDescription } = useGameState();
   const wsUrl = `${process.env.NEXT_PUBLIC_WS_BASE_URL}/superartifacts/ws`;
+
   return (
-    <LiorGameProvider gameState={gameStateRef.current ?? {}} desc={desc} wsUrl={wsUrl}>
+    <LiorGameProvider gameState={gameStateRef.current ?? {}} desc={getDescription?.()} wsUrl={wsUrl}>
       <LiorGameWrapper />
     </LiorGameProvider>
   );
