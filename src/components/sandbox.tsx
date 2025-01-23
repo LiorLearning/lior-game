@@ -96,21 +96,19 @@ export const SandboxProvider: React.FC<{
                 <span className="text-xs">Reload</span>
               </Button>
             </div>
-            <div className="relative h-full w-full flex flex-col overflow-y-auto">
-              <div className="flex-1 flex justify-center items-center">
-                {isConnected ? (
-                  <div className="min-w-[100%]">
-                    {children}
-                  </div> 
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full bg-gradient-to-b p-4">
-                    <h1 className="text-md font-bold mb-4 text-center">
-                      Loading Game
-                    </h1>
-                    <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
-                  </div>
-                )}
-              </div>
+            <div className="relative h-full w-full overflow-y-auto">
+              {isConnected ? (
+                <div className="w-full h-full">
+                  {children}
+                </div> 
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full bg-gradient-to-b p-4">
+                  <h1 className="text-md font-bold mb-4 text-center">
+                    Loading Game
+                  </h1>
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+                </div>
+              )}
             </div>
           </div>
         </div>

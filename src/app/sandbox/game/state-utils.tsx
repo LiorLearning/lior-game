@@ -1,6 +1,7 @@
+// import { fetchGameState } from "@/hooks/get-game-state";
 import { GameState, initialGameState, descriptions } from "./game-state";
-import { createContext, useContext, useReducer, useRef, ReactNode } from 'react';
-
+import { createContext, useContext, useReducer, useRef, ReactNode, useEffect } from 'react';
+// import { mergeGameState } from "@/hooks/merge-game-state";
 
 const GameStateContext = createContext<{
     gameStateRef: React.MutableRefObject<GameState>;
@@ -18,6 +19,9 @@ const GameStateContext = createContext<{
 export const GameStateProvider: React.FC<{ 
   children: ReactNode 
 }> = ({ children }) => {
+  const queryParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const id = queryParams.get('id');
+
   const gameStateRef = useRef<GameState>(initialGameState);
   const [, dispatch] = useReducer(gameStateReducer, initialGameState);
   
@@ -35,6 +39,17 @@ export const GameStateProvider: React.FC<{
       dispatch(newState)
     }
   };
+
+  // useEffect(() => {
+  //   const loadGameState = async () => {
+  //     if (id) {
+  //       const fetchedGameState = await fetchGameState(id);
+  //       setGameStateRef(mergeGameState(initialGameState, fetchedGameState || {}));
+  //     }
+  //   };
+  //   loadGameState();
+  // }, [id]);
+  
 
   const getDescription = () => {
     const description = descriptions.find(d => d.title === gameStateRef.current.screen)?.description;
