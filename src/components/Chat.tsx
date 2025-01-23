@@ -62,18 +62,23 @@ const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
   };
 
   useEffect(() => {
-    const scrollArea = scrollAreaRef.current;
+    // Find the scrollable viewport element
+    const scrollArea = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
     if (!scrollArea) return;
     
     const scrollToBottom = () => {
-      scrollArea.scrollTo({
-        top: scrollArea.scrollHeight,
-        behavior: 'smooth'
-      });
+      scrollArea.scrollTop = scrollArea.scrollHeight;
     };
 
+    // Initial scroll
     scrollToBottom();
-    const observer = new MutationObserver(scrollToBottom);
+
+    // Create observer for new messages
+    const observer = new MutationObserver(() => {
+      // Add a small delay to ensure content is rendered
+      setTimeout(scrollToBottom, 100);
+    });
+    
     observer.observe(scrollArea, { childList: true, subtree: true });
 
     return () => observer.disconnect();

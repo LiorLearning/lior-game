@@ -9,7 +9,7 @@ const Game = dynamic(() => import('./game'), {
 });
 
 import { useGameState, GameStateProvider } from './state-utils';
-import { useSandboxContext } from 'dist/src/components/sandbox';
+import { useSandboxContext } from '@/components/sandbox';
 
 console.error = () => {};
 
