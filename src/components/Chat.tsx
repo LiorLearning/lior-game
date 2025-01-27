@@ -67,7 +67,10 @@ const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
     if (!scrollArea) return;
     
     const scrollToBottom = () => {
-      scrollArea.scrollTop = scrollArea.scrollHeight;
+      scrollArea.scrollTo({
+        top: scrollArea.scrollHeight,
+        behavior: 'smooth'
+      });
     };
 
     // Initial scroll
@@ -83,7 +86,7 @@ const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
 
     return () => observer.disconnect();
   }, [messages]);
-
+  
   return (
     <div className="flex flex-col h-full bg-background">
       <div className="flex items-center justify-between px-4 py-3 border-b">
