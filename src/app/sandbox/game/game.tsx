@@ -1,71 +1,57 @@
-import { useEffect } from 'react';
-import { useRef } from 'react';
-import FirstScreen from './screen/first';
-import SecondScreen from './screen/second';
-import ThirdScreen from './screen/third';
+import React, { useEffect, useRef } from 'react'
+import First from './screenOne'
+import Second from './screenTwo';
+import ComparisonPage from './components/comparison-page';
 import { useGameState } from './state-utils';
-import { DevHelper } from './utils/helper';
+import { GameProps } from './components/types';
+import { COLORS } from './utils/constants';
 
-
-interface GameProps {
-  sendAdminMessage: (role: string, content: string) => void;
-}
-
-export default function Game({sendAdminMessage}: GameProps) {
+function Game({ sendAdminMessage }: GameProps) {
   const { gameStateRef } = useGameState();
-  const { screen } = gameStateRef.current;
-  const { step: step1 } = gameStateRef.current.state1;
-  const { step: step2 } = gameStateRef.current.state2;
-  const { step: step3 } = gameStateRef.current.state3;
-  
-  const bottomRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [step1, step2, step3]);
 
   return (
-    <div className="mx-auto game font-medium">
-      {/* Game screens */}
-      {screen === 1 && <FirstScreen sendAdminMessage={sendAdminMessage} />}
-      {screen === 2 && <SecondScreen sendAdminMessage={sendAdminMessage} />}
-      {screen === 3 && <ThirdScreen sendAdminMessage={sendAdminMessage} />}
+    <div className="h-full w-full bg-white">
+      <div className="flex flex-col h-full w-full justify-start items-center font-gaegu relative overflow-y-auto" style={{ backgroundColor: COLORS.lightBlue }}>
+        <img 
+          src="https://mathtutor-images.s3.us-east-1.amazonaws.com/games/image/clouds.png" 
+          alt="Game background" 
+          className="absolute inset-0 w-full object-cover opacity-100 z-1 right-[120px]"
+        />
+        <div className="relative z-10 w-full pt-8">
+          {gameStateRef.current.screen === 1 && (
+            <>
+              <First sendAdminMessage={sendAdminMessage} visible={true} />
+              {gameStateRef.current.state1.step === 5 && (
+                <div className="w-full absolute inset-0 z-10 rounded-lg shadow-lg" style={{
+                  backgroundColor: COLORS.white
+                }}>
+                  <div className="h-full w-full">
+                    <ComparisonPage />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          {gameStateRef.current.screen === 2 &&
+            <Second sendAdminMessage={sendAdminMessage} />
+          }
+        </div>
+        <style jsx global>{`
+          @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@300;400;700&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Jersey+20&family=Jersey+25&display=swap');
+          
+          .font-gaegu {
+            font-family: 'Gaegu', cursive;
+          }
 
-      
-      {/* Select font */}
-      <style jsx global>{`
-          @import url('https://fonts.googleapis.com/css2?family=Jersey+25&display=swap');
+          /* Update Jersey class to use proper specificity */
           .font-jersey {
-            font-family: 'Jersey 25', cursive;
+            font-family: 'Jersey 20', sans-serif !important;
           }
         `}</style>
-
-      <div ref={bottomRef} style={{ height: 0 }} />
+      </div>
     </div>
   )
 }
 
-
-// Screen 1:
-// - Clicking join initially leads to bug 
-// - Remove the green background behind chocolate (check updated figma design)
-// - Fraction counter should be a little to the left of chocolate with border (check updated figma design)
-// - Compare visually on top should be single line, 2/3 in step should be one on top of the other
-// - Add sound effects as per comment in figma for all level upgrades
-// - Add sound effects for all correct answers
-
-// Screen 2:
-// - Conversation is different and some of it is updated right now
-// - Have changed step 1 content in box (now has q; check figma)
-// - Colors of options is diff
-// - Step 2 onwards: colors are messed up, step 2 question is wrong
-// - Step 3: One by one box inputs, conversation is messed up (refer figma, previous ones missing + added new ones); header is rewrite fractions and not "fraction"
-// - Step 4: Drop down of "<", ">", "="
-
-// Screen 3:
-// - Boxes should be enabled one by one (step 1 should be denominator only), step 2 should be on same screen (not below it)
-// - Conversations are missing
-// - Alignment is messed up
-// - Correct should be just like the others (confetti + text)
+export default Game
