@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect, createContext, ReactNode, useContext } from 'react';
 
-const STREAM_CLOSE_DELAY = 2000; // Time in milliseconds to wait before closing the stream after the last chunk
+const STREAM_CLOSE_DELAY = 500; // Time in milliseconds to wait before closing the stream after the last chunk
 const BUFFER_QUEUE_THRESHOLD = 3; // Minimum number of chunks to queue before starting playback
 
 interface AudioContextProps {
   isConnected: boolean;
-  playAudio: (messageId: string, text: string) => void;
+  playAudio: (messageId: string, text: string, onComplete?: () => void) => void;
   stopAudio: (messageId?: string) => void;
 }
 
@@ -82,9 +82,11 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children, clientId
    * Initiates audio playback by connecting to the WebSocket.
    * @param messageId Unique identifier for the message.
    * @param text Text to be converted to speech.
+   * @param onComplete Optional callback to be executed when audio playback is complete.
    */
-  const playAudio = async (messageId: string, text: string) => {
+  const playAudio = async (messageId: string, text: string, onComplete?: () => void) => {
     currentMessageIdRef.current = messageId;
+    setIsPlaying(messageId, true);
 
     if (!audioContextRef.current) {
       try {
@@ -108,7 +110,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children, clientId
       }
     }
 
-    connectWebSocket(messageId, text);
+    connectWebSocket(messageId, text, onComplete);
   };
 
   /**
@@ -148,8 +150,9 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children, clientId
    * Establishes a WebSocket connection and sets up event handlers.
    * @param messageId Unique identifier for the message.
    * @param text Text to be converted to speech.
+   * @param onComplete Optional callback to be executed when audio playback is complete.
    */
-  const connectWebSocket = (messageId: string, text: string) => {
+  const connectWebSocket = (messageId: string, text: string, onComplete?: () => void) => {
     if (webSocketRef.current) {
       webSocketRef.current.close();
     }
@@ -185,9 +188,9 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children, clientId
         try {
           const message = JSON.parse(event.data);
           if (message.type === 'stream_start') {
-            initializeAudioPlayback();
+            initializeAudioPlayback(messageId, onComplete);
           } else if (message.type === 'stream_end') {
-            processAudioQueue(true);
+            processAudioQueue(message.id, onComplete, true);
           }
         } catch (error) {
           console.error('Error parsing JSON message:', error);
@@ -200,7 +203,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children, clientId
         // Enqueue the audio data
         audioBufferQueueRef.current.push(float32Data);
         // Attempt to play the queued audio
-        processAudioQueue();
+        processAudioQueue(messageId, onComplete);
       }
     };
   };
@@ -208,17 +211,18 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children, clientId
   /**
    * Initializes audio playback by setting the playing flag.
    */
-  const initializeAudioPlayback = () => {
+  const initializeAudioPlayback = (messageId: string, onComplete?: () => void) => {
     isPlayingRef.current = true;
-    processAudioQueue();
+    processAudioQueue(messageId, onComplete);
   };
 
   /**
    * Finalizes audio playback by stopping any ongoing playback.
    */
-  const finalizeAudioPlayback = () => {
+  const finalizeAudioPlayback = (messageId: string, onComplete?: () => void) => {
     isPlayingRef.current = false;
-    stopAudio();
+    onComplete?.();
+    stopAudio(messageId);
   };
 
   /**
@@ -239,7 +243,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children, clientId
   /**
    * Processes the audio buffer queue by playing the next buffer if not already playing.
    */
-  const processAudioQueue = (is_end: boolean = false) => {
+  const processAudioQueue = (messageId: string, onComplete?: () => void, is_end: boolean = false) => {
     if (!isPlayingRef.current) {
       return;
     }
@@ -263,7 +267,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children, clientId
         streamCloseTimeoutRef.current = null;
       }
       streamCloseTimeoutRef.current = setTimeout(() => {
-        finalizeAudioPlayback();
+        finalizeAudioPlayback(messageId, onComplete);
       }, STREAM_CLOSE_DELAY);
       return; // Not enough data to play yet
     }
@@ -303,7 +307,7 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children, clientId
     // When the buffer ends, play the next one in the queue
     bufferSource.onended = () => {
       currentSourceRef.current = null;
-      processAudioQueue(is_end);
+      processAudioQueue(messageId, onComplete, is_end);
     };
 
     // Start playback immediately

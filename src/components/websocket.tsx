@@ -7,7 +7,7 @@ const SPEAKOUT = true;
 
 type WebSocketContextType = {
   sendLog: (message: Message | Blob) => void;
-  addToChat: (message: Message ) => void;
+  addToChat: (message: Message, onComplete?: () => void) => void;
   toggleAudio: (message: Message) => void;
   handleStopAudio: () => void;
   isConnected: boolean;
@@ -21,7 +21,7 @@ interface WebSocketManagerProps {
   url: string;
   onConnectionChange: (isConnected: boolean) => void;
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
-  handlePlayAudio: (messageId: string, messageText: string) => void;
+  handlePlayAudio: (messageId: string, messageText: string, onComplete?: () => void) => void;
 }
 
 // WebSocket manager class to handle the connection and reconnection logic
@@ -35,7 +35,7 @@ class WebSocketManager {
   private onConnectionChange: (isConnected: boolean) => void;
   private setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   private audioContext: any = null;
-  private handlePlayAudio: (messageId: string, messageText: string) => void;
+  private handlePlayAudio: (messageId: string, messageText: string, onComplete?: () => void) => void;
 
   constructor({ url, onConnectionChange, setMessages, handlePlayAudio }: WebSocketManagerProps) {
     this.url = url;
@@ -149,7 +149,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ url, child
     currentMessageIdRef.current = null;
   };
 
-  const handlePlayAudio = (messageId: string, messageText: string) => {
+  const handlePlayAudio = (messageId: string, messageText: string, onComplete?: () => void) => {
     if (!messageText.trim()) {
       return;
     }
@@ -158,7 +158,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ url, child
 
     // Update messages state immediately
     setIsPlaying(messageId, true);
-    audioContext.playAudio(messageId, messageText);
+    audioContext.playAudio(messageId, messageText, onComplete);
     currentMessageIdRef.current = messageId;
   };
 
@@ -202,10 +202,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ url, child
     wsRef.current?.sendMessage(message);
   };
 
-  const addToChat = (message: Message) => {
-    setMessages(prev => [...prev, message]);
-    if (SPEAKOUT) {
-      handlePlayAudio(message.messageId, message.content!);
+  const addToChat = (message: Message, onComplete?: () => void) => {
+    setMessages(prevMessages => [...prevMessages, message]);
+    if (message.content) {
+      handlePlayAudio(message.messageId, message.content, onComplete);
     }
     wsRef.current?.sendMessage(message);
   };
@@ -258,6 +258,3 @@ export const WebSocketStatus: React.FC = () => {
     </div>
   );
 };
-
-
-// TODO: Batch send in websocket

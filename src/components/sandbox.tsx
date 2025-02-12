@@ -8,7 +8,7 @@ import { handleScreenshot } from './utils/screenshot';
 
 // Create a context for the Sandbox component
 const SandboxContext = createContext<{
-  sendAdminMessage: (role: string, content: string) => Promise<void>;
+  sendAdminMessage: (role: string, content: string, onComplete?: () => void) => Promise<void>;  
 }>({
   sendAdminMessage: () => Promise.resolve(),
 });
@@ -25,7 +25,7 @@ export const SandboxProvider: React.FC<{
   };
   const { isConnected, sendLog, addToChat } = useWebSocketLogger()
 
-  const sendAdminMessage = async (role: string, content: string) => {
+  const sendAdminMessage = async (role: string, content: string, onComplete?: () => void) => {
     if (role === 'admin') {
       const adminMessage = {
         type: 'admin',
@@ -37,6 +37,7 @@ export const SandboxProvider: React.FC<{
         desc: desc,
       } as AdminRequestMessage;
       sendLog(adminMessage);
+      onComplete?.();
     } else if (role === 'agent') {
       const agentMessage = {
         messageId: crypto.randomUUID(),
@@ -45,7 +46,7 @@ export const SandboxProvider: React.FC<{
         content: content,
         role: 'agent',
       } as AssistanceResponseMessage;
-      addToChat(agentMessage);
+      addToChat(agentMessage, onComplete);
     }
   };
 
