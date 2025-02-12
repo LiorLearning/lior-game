@@ -21,8 +21,9 @@ export const useSandboxContext = () => {
   const context = useSandboxContextHook();
   return {
     ...context,
-    sendAdminMessage: context.sendAdminMessage || (async (role: string, content: string, onComplete?: () => void) => {
+    sendAdminMessage: context.sendAdminMessage || (async (role: string, content: string, onComplete?: () => void) : Promise<string> => {
       console.warn('sendAdminMessage not implemented');
+      return '';
     })
   };
 };

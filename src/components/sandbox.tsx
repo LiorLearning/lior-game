@@ -8,9 +8,9 @@ import { handleScreenshot } from './utils/screenshot';
 
 // Create a context for the Sandbox component
 const SandboxContext = createContext<{
-  sendAdminMessage: (role: string, content: string, onComplete?: () => void) => Promise<void>;  
+  sendAdminMessage: (role: string, content: string, onComplete?: () => void) => Promise<string>;  
 }>({
-  sendAdminMessage: () => Promise.resolve(),
+  sendAdminMessage: () => Promise.resolve(''),
 });
 
 // Create a provider component for the Sandbox
@@ -25,9 +25,12 @@ export const SandboxProvider: React.FC<{
   };
   const { isConnected, sendLog, addToChat } = useWebSocketLogger()
 
-  const sendAdminMessage = async (role: string, content: string, onComplete?: () => void) => {
+  const sendAdminMessage = async (role: string, content: string, onComplete?: () => void) : Promise<string> => {
+    const messageId = crypto.randomUUID();
+
     if (role === 'admin') {
       const adminMessage = {
+        messageId: messageId,
         type: 'admin',
         timestamp: new Date().toISOString(),
         content: content,
@@ -40,7 +43,7 @@ export const SandboxProvider: React.FC<{
       onComplete?.();
     } else if (role === 'agent') {
       const agentMessage = {
-        messageId: crypto.randomUUID(),
+        messageId: messageId,
         type: 'agent',
         timestamp: new Date().toISOString(),
         content: content,
@@ -48,73 +51,58 @@ export const SandboxProvider: React.FC<{
       } as AssistanceResponseMessage;
       addToChat(agentMessage, onComplete);
     }
+    
+    return messageId;
   };
 
-    const handleReloadPage = () => {
-      if (typeof window !== 'undefined') {
-        window.location.reload();
+  useEffect(() => {
+    const updatePageContent = async () => {
+      if (componentRef.current) {
+        setComponentRef(componentRef);
       }
     };
 
-    useEffect(() => {
-      const updatePageContent = async () => {
-        if (componentRef.current) {
-          setComponentRef(componentRef);
-        }
-      };
-  
-      const observer = new MutationObserver(updatePageContent);
-      
-      if (componentRef.current) {
-        observer.observe(componentRef.current, {
-          attributes: true,
-          childList: true,
-          subtree: true,
-          characterData: true
-        });
-      }
-  
-      updatePageContent();
-  
-      return () => observer.disconnect();
-    }, []);
+    const observer = new MutationObserver(updatePageContent);
+    
+    if (componentRef.current) {
+      observer.observe(componentRef.current, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+    }
 
-    return (
-      <SandboxContext.Provider value={{ sendAdminMessage }}>
-        <div className="flex h-full">
-          <div className="w-[25%] min-w-[250px] flex flex-col border-r border-gray-200 fixed left-0 top-0 h-full">
-            <Chat desc={desc} componentRef={componentRef} gameState={gameState}/>
-          </div>
-          <div className="w-[75%] border-r-border flex flex-col overflow-auto fixed right-0 top-0 h-full" ref={componentRef}>
-            <div className="absolute top-5 right-5 z-10">
-              <Button 
-                variant="outline" 
-                onClick={handleReloadPage}
-                className="hover:bg-gray-100 text-foreground px-2 py-1 flex items-center gap-1"
-                title="Reload Page"
-              >
-                <RefreshCw className="h-2 w-2" />
-                <span className="text-xs">Reload</span>
-              </Button>
-            </div>
-            <div className="relative h-full w-full overflow-y-auto">
-              {isConnected ? (
-                <div className="w-full h-full">
-                  {children}
-                </div> 
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full bg-gradient-to-b p-4">
-                  <h1 className="text-md font-bold mb-4 text-center">
-                    Loading Game
-                  </h1>
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
-                </div>
-              )}
-            </div>
+    updatePageContent();
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <SandboxContext.Provider value={{ sendAdminMessage }}>
+      <div className="flex h-full">
+        <div className="w-[25%] min-w-[250px] flex flex-col border-r border-gray-200 fixed left-0 top-0 h-full">
+          <Chat desc={desc} componentRef={componentRef} gameState={gameState}/>
+        </div>
+        <div className="w-[75%] border-r-border flex flex-col overflow-auto fixed right-0 top-0 h-full" ref={componentRef}>
+          <div className="relative h-full w-full overflow-y-auto">
+            {isConnected ? (
+              <div className="w-full h-full">
+                {children}
+              </div> 
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full bg-gradient-to-b p-4">
+                <h1 className="text-md font-bold mb-4 text-center">
+                  Loading Game
+                </h1>
+                <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+              </div>
+            )}
           </div>
         </div>
-      </SandboxContext.Provider>
-    )
+      </div>
+    </SandboxContext.Provider>
+  )
 }
 
 export const useSandboxContext = () => {

@@ -7,7 +7,7 @@ import { useWebSocketLogger, WebSocketStatus } from './websocket'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import SpeechToText from './utils/speech_to_text'
-import { Send } from 'lucide-react'
+import { RefreshCw, Send } from 'lucide-react'
 import { handleScreenshot } from './utils/screenshot'
 import Message from './utils/Message'
 
@@ -61,6 +61,12 @@ const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
     setInputMessage('');
   };
 
+  const handleReloadPage = () => {
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  };
+
   useEffect(() => {
     // Find the scrollable viewport element
     const scrollArea = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
@@ -89,9 +95,20 @@ const Chat: React.FC<ChatProps> = ({ desc, gameState, componentRef }) => {
   
   return (
     <div className="flex flex-col h-full bg-background">
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <h2 className="text-lg font-semibold">Chat</h2>
-        <WebSocketStatus />
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm">
+        <h2 className="text-xl font-bold text-foreground tracking-tight">Chat</h2>
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            onClick={handleReloadPage}
+            className="hover:bg-accent/50 text-foreground px-3 py-1.5 flex items-center gap-2 rounded-lg transition-all duration-200 ease-in-out"
+            title="Reload Page"
+          >
+            <RefreshCw className="h-4 w-4 stroke-[2.5px] text-muted-foreground" />
+            <span className="text-sm font-medium">Reload</span>
+          </Button>
+          <WebSocketStatus />
+        </div>
       </div>
       
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
