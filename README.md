@@ -78,7 +78,9 @@ A hook that provides communication with the AI assistant.
 const { sendAdminMessage } = useSandboxContext();
 
 // Send messages from the AI assistant
-sendAdminMessage('agent', 'Try clicking the blue button');
+sendAdminMessage('agent', 'Try clicking the blue button', () => {
+  console.log('message sent');
+});
 ```
 
 ## Built-in Components
@@ -207,3 +209,11 @@ MIT © Lior Learning Inc
 ## Contributing
 
 Contributions are welcome! Please read our contributing guidelines before submitting a pull request.
+
+## Development
+
+To run the development server, run `npm run dev`.
+
+To build the package, run `npm run build`.
+
+To push the package to npm, run `npm publish`.
