@@ -11,3 +11,4 @@ export { Toggle } from './toggle';
 export { ToggleGroup } from './toggle-group';
 export { Progress } from './progress';
 export { Label } from './label';
+export { NewInput } from './newinput';

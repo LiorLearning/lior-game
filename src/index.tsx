@@ -58,7 +58,8 @@ export const {
   Toggle, 
   ToggleGroup, 
   Progress, 
-  Label 
+  Label,
+  NewInput,
 } = CustomUI;
 
 export const CustomComponents = CustomUI;
