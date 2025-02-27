@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 export interface NewInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   value: string;

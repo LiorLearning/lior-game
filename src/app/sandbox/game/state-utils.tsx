@@ -2,11 +2,13 @@
 import { GameState, initialGameState, descriptions } from "./game-state";
 import { createContext, useContext, useReducer, useRef, ReactNode, useEffect } from 'react';
 // import { mergeGameState } from "@/hooks/merge-game-state";
+import  checkGameStateLimits  from './state-limits';
 
 const GameStateContext = createContext<{
     gameStateRef: React.MutableRefObject<GameState>;
     setGameStateRef: (newState: ((prevState: GameState) => GameState) | Partial<GameState>) => void;
     getDescription: () => string;
+    setGameState: (newState: Partial<GameState>) => void;
   } | undefined>(undefined);
   
   const gameStateReducer = (state: GameState, action: Partial<GameState> | ((prevState: GameState) => GameState)): GameState => {
@@ -40,15 +42,38 @@ export const GameStateProvider: React.FC<{
     }
   };
 
-  // useEffect(() => {
-  //   const loadGameState = async () => {
-  //     if (id) {
-  //       const fetchedGameState = await fetchGameState(id);
-  //       setGameStateRef(mergeGameState(initialGameState, fetchedGameState || {}));
-  //     }
-  //   };
-  //   loadGameState();
-  // }, [id]);
+  const setGameState = (newState: Partial<GameState>) => {
+    // setGameStateRef(mergeGameState(gameStateRef.current, newState))
+  }
+
+
+  useEffect(() => {
+    const loadGameState = async () => {
+      const currentGame = window.location.search.split('game=')[1]?.split('&')[0] || 'template-game';
+
+      try {
+        // const fetchedGameState = (id ? 
+        //   // await fetchGameState(id) as Partial<GameState> : 
+        //   (localStorage.getItem(currentGame) ? 
+        //     JSON.parse(localStorage.getItem(currentGame) || '{}') as Partial<GameState> : 
+        //     initialGameState)
+        // );
+
+        // const updatedGameState = mergeGameState(initialGameState, fetchedGameState);
+        // const validationResult = checkGameStateLimits(updatedGameState);
+        
+        // if (validationResult.isValid) {
+        //   setGameStateRef(updatedGameState);
+        // } else {
+        //   alert(`Invalid game state: ${validationResult.reason}`);
+        // }
+      } catch (e) {
+        console.error('Error fetching game state:', e);
+      }
+    };
+
+    loadGameState();
+  }, [id]);
   
 
   const getDescription = () => {
@@ -60,7 +85,8 @@ export const GameStateProvider: React.FC<{
     <GameStateContext.Provider value={{ 
       gameStateRef,
       setGameStateRef,
-      getDescription
+      getDescription,
+      setGameState
     }}>
       {children}
     </GameStateContext.Provider>
